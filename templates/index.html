@@ -83,20 +83,7 @@
                 {% else %}
                     <!-- Entrar e Cadastrar (pra quem não logou) -->
                     <li class="nav-item">
-                        @app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        email = form.email.data
-        c.execute("SELECT id, password, is_pro FROM users WHERE email = ?", (email,))
-        row = c.fetchone()
-        if row and check_password_hash(row[1], form.password.data):  # row[1] é password agora
-            user = User(row[0], email, row[2])  # row[2] é is_pro
-            login_user(user)
-            flash('Login feito!', 'success')
-            return redirect(url_for('home'))
-        flash('Email ou senha inválidos.', 'danger')
-    return render_template('login.html', form=form)
+                       <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
                         </a>
                     </li>
