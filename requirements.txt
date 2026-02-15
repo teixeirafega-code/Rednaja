@@ -7,3 +7,4 @@ pandas
 tabula-py
 reportlab
 gunicorn
+email-validator
