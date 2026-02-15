@@ -14,12 +14,6 @@
     </style>
 </head>
 <body>
-
-    <!-- AVISO DE ACORDAR O SERVIÇO -->
-    <div class="alert alert-info text-center mb-0 rounded-0">
-        <strong>Atenção:</strong> Primeiro acesso pode demorar até 1 minuto (serviço acordando). Depois fica rápido!
-    </div>
-
     <div class="container">
         <h2 class="text-center mb-4">Login</h2>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -43,7 +37,5 @@
         </form>
         <p class="text-center mt-3">Ainda não tem conta? <a href="{{ url_for('register') }}">Cadastre-se</a></p>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
