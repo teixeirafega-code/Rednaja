@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, redirect, url_for, flash
+from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -17,7 +17,7 @@ import urllib.parse
 warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_aqui'  # Muda pra algo seguro (ex: string aleatória longa)
+app.secret_key = 'Fernando12@24'  # Mude pra algo seguro em produção!
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -84,8 +84,8 @@ def login():
         email = form.email.data
         c.execute("SELECT id, password, is_pro FROM users WHERE email = ?", (email,))
         row = c.fetchone()
-        if row and check_password_hash(row[1], form.password.data):  # row[1] = password
-            user = User(row[0], email, row[2])  # row[2] = is_pro
+        if row and check_password_hash(row[1], form.password.data):
+            user = User(row[0], email, row[2])
             login_user(user)
             flash('Login feito!', 'success')
             return redirect(url_for('home'))
@@ -131,12 +131,12 @@ def home():
                 if caminho.lower().endswith('.pdf'):
                     dfs = tabula.read_pdf(caminho, pages='all', multiple_tables=True)
                     if not dfs:
-                        raise ValueError("Nenhuma tabela encontrada no PDF. O PDF pode ser imagem escaneada (não texto selecionável). Converta para CSV ou use um PDF com texto.")
+                        raise ValueError("Nenhuma tabela encontrada no PDF.")
                     df = pd.concat(dfs, ignore_index=True)
                     df.columns = df.columns.str.lower().str.strip()
                     valor_col = next((col for col in df.columns if 'valor' in col or 'total' in col or 'saldo' in col), None)
                     if valor_col is None:
-                        raise ValueError("Não encontrou coluna de valor/total/saldo no PDF.")
+                        raise ValueError("Não encontrou coluna de valor.")
                     df[valor_col] = pd.to_numeric(df[valor_col].astype(str).str.replace(',', '.').str.strip(), errors='coerce')
                     return df[valor_col].sum()
                 elif caminho.lower().endswith('.csv'):
@@ -144,7 +144,7 @@ def home():
                     df.columns = df.columns.str.lower().str.strip()
                     valor_col = next((col for col in df.columns if 'valor' in col or 'total' in col), None)
                     if valor_col is None:
-                        raise ValueError("Não encontrou coluna de valor/total no CSV.")
+                        raise ValueError("Não encontrou coluna de valor.")
                     df[valor_col] = pd.to_numeric(df[valor_col].astype(str).str.replace(',', '.').str.strip(), errors='coerce')
                     return df[valor_col].sum()
                 else:
@@ -156,34 +156,50 @@ def home():
 
             mensagem = f"Conciliação feita! Divergência: R$ {divergencia:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
-            # Salva histórico sempre (pra todos os usuários)
+            # Salva histórico sempre
             c.execute("INSERT INTO conciliacoes (user_id, data, total_extrato, total_vendas, divergencia) VALUES (?, DATETIME('now'), ?, ?, ?)",
                       (current_user.id, total_extrato, total_vendas, divergencia))
             conn.commit()
 
-            # Libera conteúdo completo só pro Pro
+            # Preparar PDF e WhatsApp temporários
+            pdf_path_temp = os.path.join(app.config['UPLOAD_FOLDER'], f'relatorio_{current_user.id}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf')
+            wa_link_temp = None
+            if abs(divergencia) > 50.00:
+                texto = f"Ei, detectei divergência de R$ {divergencia:,.2f} esse mês no meu sistema MEI Organizado.\nTotal vendas: R$ {total_vendas:,.2f}\nTotal extrato: R$ {total_extrato:,.2f}\nDá uma olhada? 🚨"
+                texto_encoded = urllib.parse.quote(texto)
+                wa_link_temp = f"https://wa.me/?text={texto_encoded}"
+
+            # Verifica plano
             if current_user.is_pro:
-                pdf_path = gerar_pdf(total_extrato, total_vendas, divergencia)
-                if abs(divergencia) > 50.00:
-                    texto = f"Ei, detectei divergência de R$ {divergencia:,.2f} esse mês no meu sistema MEI Organizado.\nTotal vendas: R$ {total_vendas:,.2f}\nTotal extrato: R$ {total_extrato:,.2f}\nDá uma olhada? 🚨"
-                    texto_encoded = urllib.parse.quote(texto)
-                    wa_link = f"https://wa.me/?text={texto_encoded}"
+                # Tem plano → libera completo agora
+                pdf_path = gerar_pdf(total_extrato, total_vendas, divergencia, pdf_path_temp)
+                wa_link = wa_link_temp
             else:
-                mensagem += "<br><strong>Resultado completo (PDF + alerta WhatsApp) liberado apenas no Plano Pro (R$ 59/mês). Assine agora!</strong>"
+                # Não tem plano → salva na sessão e redireciona pra escolha
+                session['conciliacao_pendente'] = {
+                    'mensagem': mensagem,
+                    'divergencia': divergencia,
+                    'total_extrato': total_extrato,
+                    'total_vendas': total_vendas,
+                    'pdf_path_temp': pdf_path_temp,
+                    'wa_link_temp': wa_link_temp
+                }
+                return redirect(url_for('escolher_plano'))
 
         except Exception as e:
             mensagem = f"Erro ao processar: {str(e)}"
 
-        try:
-            os.remove(extrato_path)
-            os.remove(vendas_path)
-        except:
-            pass
+        finally:
+            try:
+                os.remove(extrato_path)
+                os.remove(vendas_path)
+            except:
+                pass
 
     return render_template('index.html', mensagem=mensagem, divergencia=divergencia,
                            total_extrato=total_extrato, total_vendas=total_vendas, pdf_path=pdf_path, wa_link=wa_link)
 
-def gerar_pdf(total_extrato, total_vendas, divergencia):
+def gerar_pdf(total_extrato, total_vendas, divergencia, pdf_path):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -207,7 +223,6 @@ def gerar_pdf(total_extrato, total_vendas, divergencia):
     p.save()
     buffer.seek(0)
 
-    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'relatorio.pdf')
     with open(pdf_path, 'wb') as f:
         f.write(buffer.read())
 
@@ -219,10 +234,22 @@ def download():
     if not current_user.is_pro:
         flash('Baixar PDF completo é exclusivo do Plano Pro. Assine agora!', 'warning')
         return redirect(url_for('home'))
-    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'relatorio.pdf')
+    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'relatorio.pdf')  # ajuste se usar nome dinâmico
     if os.path.exists(pdf_path):
         return send_file(pdf_path, as_attachment=True, download_name=f"relatorio_{datetime.date.today()}.pdf")
     return "Relatório não encontrado", 404
+
+@app.route('/escolher-plano')
+@login_required
+def escolher_plano():
+    conciliacao = session.get('conciliacao_pendente')
+    if not conciliacao:
+        flash("Nenhuma conciliação pendente. Faça upload novamente.", "info")
+        return redirect(url_for('home'))
+
+
+
+    return render_template('escolher_plano.html', conciliacao=conciliacao)
 
 @app.route('/historico')
 @login_required
@@ -231,5 +258,9 @@ def historico():
     conciliacoes = c.fetchall()
     return render_template('historico.html', conciliacoes=conciliacoes)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
+   
