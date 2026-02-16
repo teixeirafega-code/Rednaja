@@ -8,3 +8,5 @@ tabula-py
 reportlab
 gunicorn
 email-validator
+mercadopago
+python
