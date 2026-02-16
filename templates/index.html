@@ -157,6 +157,7 @@
                             </span>
                         </li>
 
+
                         <!-- Histórico -->
                         <li class="nav-item">
                             <a class="nav-link btn btn-outline-primary btn-sm d-flex align-items-center" href="{{ url_for('historico') }}">
@@ -164,25 +165,27 @@
                             </a>
                         </li>
 
-                        <!-- Sair -->
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
-                                <i class="bi bi-box-arrow-right me-1"></i> Sair
-                            </a>
-                        </li>
-                    {% else %}
-                        <!-- Entrar e Cadastrar (pra quem não logou) -->
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-primary btn-sm d-flex align-items-center" href="{{ url_for('login') }}">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-primary btn-sm" href="{{ url_for('register') }}">Cadastrar</a>
-                        </li>
-                    {% endif %}
-                </ul>
+                        
             </div>
+
+                    <!-- Sair -->
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Sair
+                        </a>
+                    </li>
+                {% else %}
+                    <!-- Entrar e Cadastrar (pra quem não logou) -->
+                    <li class="nav-item">
+                       <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary btn-sm" href="{{ url_for('register') }}">Cadastrar</a>
+                    </li>
+                {% endif %}
+            </ul>
         </div>
     </nav>
 
