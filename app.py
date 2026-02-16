@@ -258,6 +258,30 @@ def historico():
     conciliacoes = c.fetchall()
     return render_template('historico.html', conciliacoes=conciliacoes)
 
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.json
+    if not data:
+        return '', 400
+
+    # Verifica se é evento de pagamento
+    if data.get('type') == 'payment':
+        payment_id = data.get('data', {}).get('id')
+
+        # Pra teste: assume aprovado (em produção, chama API do Mercado Pago pra confirmar)
+        # Pra produção: usa SDK do Mercado Pago pra pegar status
+        # Exemplo simples com metadata (salva o email do comprador na criação do plano)
+
+        email = data.get('data', {}).get('metadata', {}).get('email')
+
+        if email:
+            c.execute("UPDATE users SET is_pro = 1 WHERE email = ?", (email,))
+            conn.commit()
+            print(f"Usuário {email} ativado como Pro via webhook!")
+            return '', 200
+
+    return '', 200
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
