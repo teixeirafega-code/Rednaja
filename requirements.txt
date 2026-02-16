@@ -9,4 +9,3 @@ reportlab
 gunicorn
 email-validator
 mercadopago
-python
