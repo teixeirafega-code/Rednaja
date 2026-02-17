@@ -5,8 +5,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo
 from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
-import pdfplumber  # principal pra PDF sem Java
-import camelot     # fallback pra tabelas difíceis
+import tabula
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from io import BytesIO
@@ -100,153 +99,6 @@ def logout():
     flash('Saiu da conta.', 'info')
     return redirect(url_for('login'))
 
-def limpar_valor(v):
-    if v is None:
-        return None
-    
-    v = str(v).strip()
-    
-    # Remove símbolos comuns de moeda e espaços extras
-    v = v.replace('R$', '').replace('R$ ', '').replace('R$', '').strip()
-    v = v.replace(' ', '')
-    
-    # Conta quantos pontos e vírgulas existem
-    qtd_ponto = v.count('.')
-    qtd_virgula = v.count(',')
-    
-    if qtd_virgula == 1 and qtd_ponto <= 1:
-        # Formato brasileiro clássico: 1.234,56
-        v = v.replace('.', '').replace(',', '.')
-    
-    elif qtd_ponto == 1 and qtd_virgula == 0:
-        # Formato americano/alguns sistemas: 1234.56
-        # não faz nada, já está com ponto como decimal
-        pass
-    
-    elif qtd_ponto > 1 and qtd_virgula == 0:
-        # 1.234.567,89 → provavelmente brasileiro com ponto como milhar
-        v = v.replace('.', '')
-    
-    elif qtd_virgula > 1 and qtd_ponto == 0:
-        # 1,234,567.89 → americano com vírgula como milhar
-        v = v.replace(',', '')
-    
-    else:
-        # Caso ambíguo → tenta remover tudo que não seja número, -, .
-        v = ''.join(c for c in v if c.isdigit() or c in '.-')
-    
-    try:
-        return float(v)
-    except (ValueError, TypeError):
-        return None
-
-
-def ler_arquivo(caminho):
-    caminho_lower = caminho.lower()
-
-    # ================= PDF =================
-    if caminho_lower.endswith('.pdf'):
-
-        try:
-            with pdfplumber.open(caminho) as pdf:
-                total = 0.0
-                is_extrato = False
-
-                for page in pdf.pages:
-                    table = page.extract_table()
-                    if not table:
-                        continue
-
-                    header = [str(h).lower().strip() for h in table[0] if h]
-                    header_str = ' '.join(header)
-
-                    if "saldo" in header_str and "valor" in header_str:
-                        is_extrato = True
-
-                    col_idx = None
-                    for i, nome in enumerate(header):
-                        if any(p in nome for p in ["valor", "total", "crédito", "credito", "débito", "debito"]):
-                            col_idx = i
-                            break
-
-                    if col_idx is None:
-                        continue
-
-                    for row in table[1:]:
-                        if len(row) <= col_idx:
-                            continue
-
-                        valor = limpar_valor(row[col_idx])
-                        if valor is None:
-                            continue
-
-                        if is_extrato:
-                            if valor > 0:
-                                total += valor
-                        else:
-                            total += valor
-
-                return total
-
-        except Exception as e:
-            print("Erro PDF:", e)
-            raise ValueError("Erro ao ler PDF")
-
-    # ================= CSV =================
-    elif caminho_lower.endswith(".csv"):
-
-        try:
-            df = pd.read_csv(caminho, sep=None, engine='python')
-        except:
-            df = pd.read_csv(caminho)
-
-        df.columns = df.columns.str.lower().str.strip()
-
-        col = next(
-            (c for c in df.columns if any(p in c for p in
-             ["valor", "total", "amount", "credito", "crédito", "debito", "débito"])),
-            None
-        )
-
-        if not col:
-            raise ValueError("CSV sem coluna de valor identificável.")
-
-        def converter(v):
-            if pd.isna(v):
-                return 0.0
-
-            v = str(v)
-            v = v.replace("R$", "").replace(" ", "").strip()
-
-            if "," in v and "." in v:
-                v = v.replace(".", "").replace(",", ".")
-            elif "," in v:
-                v = v.replace(",", ".")
-
-            try:
-                return float(v)
-            except:
-                return 0.0
-
-        df[col] = df[col].apply(converter)
-
-        header_str = " ".join(df.columns)
-
-        if any(p in header_str for p in ["saldo", "descrição", "descricao", "banco"]):
-            return df[df[col] > 0][col].sum()
-
-        return df[col].sum()
-
-    # ================= OUTRO =================
-    else:
-        raise ValueError("Formato não suportado")
-
-
-
-def formato_br(valor):
-    return f"R$ {valor:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-
-
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
@@ -275,19 +127,34 @@ def home():
         vendas_file.save(vendas_path)
 
         try:
+            def ler_arquivo(caminho):
+                if caminho.lower().endswith('.pdf'):
+                    dfs = tabula.read_pdf(caminho, pages='all', multiple_tables=True)
+                    if not dfs:
+                        raise ValueError("Nenhuma tabela encontrada no PDF.")
+                    df = pd.concat(dfs, ignore_index=True)
+                    df.columns = df.columns.str.lower().str.strip()
+                    valor_col = next((col for col in df.columns if 'valor' in col or 'total' in col or 'saldo' in col), None)
+                    if valor_col is None:
+                        raise ValueError("Não encontrou coluna de valor.")
+                    df[valor_col] = pd.to_numeric(df[valor_col].astype(str).str.replace(',', '.').str.strip(), errors='coerce')
+                    return df[valor_col].sum()
+                elif caminho.lower().endswith('.csv'):
+                    df = pd.read_csv(caminho)
+                    df.columns = df.columns.str.lower().str.strip()
+                    valor_col = next((col for col in df.columns if 'valor' in col or 'total' in col), None)
+                    if valor_col is None:
+                        raise ValueError("Não encontrou coluna de valor.")
+                    df[valor_col] = pd.to_numeric(df[valor_col].astype(str).str.replace(',', '.').str.strip(), errors='coerce')
+                    return df[valor_col].sum()
+                else:
+                    raise ValueError(f"Formato não suportado: {caminho}")
+
             total_extrato = ler_arquivo(extrato_path)
             total_vendas = ler_arquivo(vendas_path)
             divergencia = total_vendas - total_extrato
 
-            mensagem = (
-    f"Conciliação feita!\n"
-    f"Total Extrato (movimentações líquidas): {formato_br(total_extrato)}\n"
-    f"Total Vendas registradas: {formato_br(total_vendas)}\n"
-    f"Divergência: {formato_br(divergencia)}\n\n"
-    f"{'Dica: ' if abs(divergencia) > 50 else ''}"
-    f"{'Se vendas > extrato: confira depósitos pendentes, taxas ou prazos de cartão/Pix.' if divergencia > 0 else ''}"
-    f"{'Se extrato > vendas: verifique lançamentos duplicados ou entradas não registradas.' if divergencia < 0 else ''}"
-)
+            mensagem = f"Conciliação feita! Divergência: R$ {divergencia:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
             # Salva histórico sempre
             c.execute("INSERT INTO conciliacoes (user_id, data, total_extrato, total_vendas, divergencia) VALUES (?, DATETIME('now'), ?, ?, ?)",
@@ -298,16 +165,17 @@ def home():
             pdf_path_temp = os.path.join(app.config['UPLOAD_FOLDER'], f'relatorio_{current_user.id}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf')
             wa_link_temp = None
             if abs(divergencia) > 50.00:
-                texto = f"Ei, detectei divergência de {formato_br(divergencia)} esse mês no meu sistema MEI Organizado.\nTotal vendas: {formato_br(total_vendas)}\nTotal extrato: {formato_br(total_extrato)}\nDá uma olhada? 🚨"
+                texto = f"Ei, detectei divergência de R$ {divergencia:,.2f} esse mês no meu sistema MEI Organizado.\nTotal vendas: R$ {total_vendas:,.2f}\nTotal extrato: R$ {total_extrato:,.2f}\nDá uma olhada? 🚨"
                 texto_encoded = urllib.parse.quote(texto)
                 wa_link_temp = f"https://wa.me/?text={texto_encoded}"
 
             # Verifica plano
             if current_user.is_pro:
+                # Tem plano → libera completo agora
                 pdf_path = gerar_pdf(total_extrato, total_vendas, divergencia, pdf_path_temp)
                 wa_link = wa_link_temp
-                session['last_pdf_path'] = pdf_path  # Salva para download
             else:
+                # Não tem plano → salva na sessão e redireciona pra escolha
                 session['conciliacao_pendente'] = {
                     'mensagem': mensagem,
                     'divergencia': divergencia,
@@ -341,12 +209,12 @@ def gerar_pdf(total_extrato, total_vendas, divergencia, pdf_path):
 
     p.setFont("Helvetica", 12)
     p.drawString(50, height - 120, f"Data do relatório: {datetime.date.today().strftime('%d/%m/%Y')}")
-    p.drawString(50, height - 150, f"Total no extrato bancário: {formato_br(total_extrato)}")
-    p.drawString(50, height - 170, f"Total de vendas registradas: {formato_br(total_vendas)}")
+    p.drawString(50, height - 150, f"Total no extrato bancário: R$ {total_extrato:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+    p.drawString(50, height - 170, f"Total de vendas registradas: R$ {total_vendas:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
 
     p.setFont("Helvetica-Bold", 14)
     p.setFillColorRGB(0, 0.7, 0) if divergencia >= 0 else p.setFillColorRGB(0.8, 0, 0)
-    p.drawString(50, height - 210, f"Divergência: {formato_br(divergencia)}")
+    p.drawString(50, height - 210, f"Divergência: R$ {divergencia:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
 
     p.setFont("Helvetica", 10)
     p.drawString(50, height - 250, "Dica: Se a divergência for maior que R$ 50, confira entradas manuais ou depósitos não identificados.")
@@ -366,8 +234,8 @@ def download():
     if not current_user.is_pro:
         flash('Baixar PDF completo é exclusivo do Plano Pro. Assine agora!', 'warning')
         return redirect(url_for('home'))
-    pdf_path = session.get('last_pdf_path')
-    if pdf_path and os.path.exists(pdf_path):
+    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'relatorio.pdf')  # ajuste se usar nome dinâmico
+    if os.path.exists(pdf_path):
         return send_file(pdf_path, as_attachment=True, download_name=f"relatorio_{datetime.date.today()}.pdf")
     return "Relatório não encontrado", 404
 
@@ -378,6 +246,9 @@ def escolher_plano():
     if not conciliacao:
         flash("Nenhuma conciliação pendente. Faça upload novamente.", "info")
         return redirect(url_for('home'))
+
+
+
     return render_template('escolher_plano.html', conciliacao=conciliacao)
 
 @app.route('/historico')
@@ -387,14 +258,21 @@ def historico():
     conciliacoes = c.fetchall()
     return render_template('historico.html', conciliacoes=conciliacoes)
 
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.json
     if not data:
         return '', 400
 
+    # Verifica se é evento de pagamento
     if data.get('type') == 'payment':
         payment_id = data.get('data', {}).get('id')
+
+        # Pra teste: assume aprovado (em produção, chama API do Mercado Pago pra confirmar)
+        # Pra produção: usa SDK do Mercado Pago pra pegar status
+        # Exemplo simples com metadata (salva o email do comprador na criação do plano)
+
         email = data.get('data', {}).get('metadata', {}).get('email')
 
         if email:
@@ -404,6 +282,12 @@ def webhook():
             return '', 200
 
     return '', 200
-
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+   
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
