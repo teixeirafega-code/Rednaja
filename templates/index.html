@@ -230,10 +230,9 @@
                 <div class="alert {% if divergencia is not none and divergencia >= 0 %}alert-success{% else %}alert-danger{% endif %} mt-4">
                     <strong>{{ mensagem }}</strong><br>
                     {% if divergencia is not none %}
-                       Total Extrato: R$ {{ "%.2f"|format(total_extrato)|replace('.', ',') }}<br>
-                        Total Vendas: R$ {{ "%.2f"|format(total_vendas)|replace('.', ',') }}<br>
-                        Divergência: R$ {{ "%.2f"|format(divergencia)|replace('.', ',') }}
-
+                        Total Extrato: R$ {{ total_extrato|round(2)|string|replace('.', ',') }}<br>
+                        Total Vendas: R$ {{ total_vendas|round(2)|string|replace('.', ',') }}<br>
+                        Divergência: R$ {{ divergencia|round(2)|string|replace('.', ',') }}
                     {% endif %}
                 </div>
 
