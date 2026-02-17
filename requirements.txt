@@ -1,4 +1,5 @@
 flask
+gunicorn
 flask-login
 flask-wtf
 werkzeug
