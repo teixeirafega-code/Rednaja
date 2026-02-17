@@ -15,7 +15,7 @@
         position: relative;
     }
 
-    /* overlay escuro elegante */
+   
     body::before {
         content: "";
         position: absolute;
@@ -27,13 +27,13 @@
         z-index: -1;
     }
 
-    /* títulos */
+    
     h1, h2 {
         color: #D4AF37;
         font-weight: 700;
     }
 
-    /* navbar */
+    
     .navbar {
         background: #111 !important;
     }
@@ -44,7 +44,7 @@
         color: #D4AF37 !important;
     }
 
-    /* botões principais */
+    
     .btn-primary {
         background: #D4AF37;
         border: none;
@@ -57,7 +57,7 @@
         color: #000;
     }
 
-    /* botões outline */
+    
     .btn-outline-primary {
         border-color: #D4AF37;
         color: #D4AF37;
@@ -68,7 +68,7 @@
         color: #111;
     }
 
-    /* alertas adaptados */
+    
     .alert-success {
         background: #1C1C1C;
         border: 1px solid #D4AF37;
@@ -81,7 +81,7 @@
         color: #F5C2C7;
     }
 
-    /* upload box */
+    
     .upload-box {
     border: 2px dashed #D4AF37;
     border-radius: 16px;
@@ -128,7 +128,7 @@
         margin-top: 10px;
     }
 
-    /* textos auxiliares */
+    
     .text-muted {
         color: #BBB !important;
     }
@@ -149,7 +149,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center gap-3">
                     {% if current_user.is_authenticated %}
-                        <!-- Email do usuário (com ícone) -->
+                        
                         <li class="nav-item">
                             <span class="nav-link text-muted fw-medium d-flex align-items-center">
                                 <i class="bi bi-person-circle me-2 text-primary"></i>
@@ -158,7 +158,7 @@
                         </li>
 
 
-                        <!-- Histórico -->
+                        
                         <li class="nav-item">
                             <a class="nav-link btn btn-outline-primary btn-sm d-flex align-items-center" href="{{ url_for('historico') }}">
                                 <i class="bi bi-clock-history me-1"></i> Histórico
@@ -168,14 +168,14 @@
                         
             </div>
 
-                    <!-- Sair -->
+                    
                     <li class="nav-item">
                         <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
                             <i class="bi bi-box-arrow-right me-1"></i> Sair
                         </a>
                     </li>
                 {% else %}
-                    <!-- Entrar e Cadastrar (pra quem não logou) -->
+                    
                     <li class="nav-item">
                        <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
@@ -230,9 +230,10 @@
                 <div class="alert {% if divergencia is not none and divergencia >= 0 %}alert-success{% else %}alert-danger{% endif %} mt-4">
                     <strong>{{ mensagem }}</strong><br>
                     {% if divergencia is not none %}
-                        Total Extrato: R$ {{ total_extrato|round(2)|string|replace('.', ',') }}<br>
-                        Total Vendas: R$ {{ total_vendas|round(2)|string|replace('.', ',') }}<br>
-                        Divergência: R$ {{ divergencia|round(2)|string|replace('.', ',') }}
+                       Total Extrato: R$ {{ "%.2f"|format(total_extrato)|replace('.', ',') }}<br>
+                        Total Vendas: R$ {{ "%.2f"|format(total_vendas)|replace('.', ',') }}<br>
+                        Divergência: R$ {{ "%.2f"|format(divergencia)|replace('.', ',') }}
+
                     {% endif %}
                 </div>
 
@@ -248,7 +249,7 @@
                     </a>
                 {% endif %}
 
-                <!-- AQUI COMEÇA A SEÇÃO DE PLANOS - SÓ aparece DEPOIS da conciliação -->
+                
                 <div class="mt-5 text-center">
                     <p class="lead mb-4">Um investimento mínimo para máxima organização.</p>
                 <div class="mt-5 text-center"></div>
@@ -259,7 +260,7 @@
 
                     <p class="mt-4 text-muted small text-center">Sem fidelidade — cancele quando quiser. Custa menos que um lanche e resolve seu mês inteiro.</p>
                 </div>
-                <!-- FIM DA SEÇÃO DE PLANOS -->
+                
             {% endif %}
         {% endif %}
     </div>
