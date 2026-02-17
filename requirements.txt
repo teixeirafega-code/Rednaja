@@ -6,4 +6,4 @@ pandas
 pdfplumber
 camelot-py
 reportlab
-mercadopago-sdk
+mercadopago
