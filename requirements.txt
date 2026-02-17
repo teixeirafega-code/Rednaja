@@ -4,6 +4,7 @@ flask-login
 flask-wtf
 werkzeug
 pandas
+tabula-py
 pdfplumber
 camelot-py
 reportlab
