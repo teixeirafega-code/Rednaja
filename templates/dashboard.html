@@ -115,6 +115,41 @@
             </div>
         </div>
 
+        <!-- SCORE FINANCEIRO -->
+        <div class="card rounded-3xl p-8 mb-10 border-2 {% if finance_score_tone == 'green' %}border-emerald-500/40{% elif finance_score_tone == 'yellow' %}border-amber-400/40{% else %}border-red-500/40{% endif %}">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-7">
+                <div>
+                    <div class="text-xs uppercase tracking-[2px] text-slate-400 mb-2">Termometro do negocio</div>
+                    <h2 class="text-3xl font-semibold text-white">Score Financeiro</h2>
+                    <p class="text-slate-300 mt-2">{{ score_motivo }}</p>
+                </div>
+                <div class="text-left lg:text-right">
+                    <div class="text-6xl font-black leading-none {% if finance_score_tone == 'green' %}text-emerald-400{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-400{% endif %}">
+                        {{ finance_score }}
+                    </div>
+                    <div class="text-sm font-semibold mt-1 {% if finance_score_tone == 'green' %}text-emerald-300{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-300{% endif %}">
+                        {{ finance_score_label }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full h-3 rounded-full bg-slate-800 mb-7 overflow-hidden">
+                <div class="h-full {% if finance_score_tone == 'green' %}bg-emerald-500{% elif finance_score_tone == 'yellow' %}bg-amber-400{% else %}bg-red-500{% endif %}" style="width: {{ finance_score }}%"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for item in score_criterios %}
+                <div class="rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
+                    <div class="text-xs uppercase tracking-widest text-slate-400">{{ item.titulo }}</div>
+                    <div class="mt-2 text-xl font-bold text-white">{{ item.detalhe }}</div>
+                    <div class="mt-2 text-sm {% if item.pontos >= 25 %}text-emerald-300{% elif item.pontos >= 15 %}text-amber-300{% else %}text-red-300{% endif %}">
+                        {{ item.pontos }} / 25 pontos
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- 1. CARDS RESUMO -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
             <!-- Receita -->
@@ -290,6 +325,33 @@
                 </a>
                 {% endif %}
             </div>
+
+            {% if ultima_conciliacao and ultima_conciliacao.total_vendas %}
+            <div class="mt-10 border border-slate-700 rounded-3xl p-8 bg-slate-900/30">
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-semibold text-white">Atualizar visao geral do painel?</h3>
+                    <p class="text-slate-400 text-sm mt-2">Escolha se quer substituir o resumo do mes ou somar ao que ja existe.</p>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-4">
+                    <form method="POST" action="{{ url_for('aplicar_visao_geral') }}">
+                        <input type="hidden" name="acao" value="substituir">
+                        <button type="submit"
+                                class="bg-emerald-600 hover:bg-emerald-700 px-7 py-4 rounded-2xl font-semibold text-white transition">
+                            Adicionar na visao geral
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('aplicar_visao_geral') }}">
+                        <input type="hidden" name="acao" value="somar">
+                        <button type="submit"
+                                class="bg-amber-600 hover:bg-amber-700 px-7 py-4 rounded-2xl font-semibold text-white transition">
+                            Somar com o que ja tem
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -33,9 +33,14 @@
 <!-- NAVBAR (institucional para percepção de empresa grande) -->
 <nav class="fixed top-0 w-full bg-dark/90 backdrop-blur-lg border-b border-slate-800 z-50">
     <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <img src="https://via.placeholder.com/40?text=MEI" alt="Logo" class="w-10 h-10"> <!-- Placeholder para logo profissional -->
-            <span class="text-3xl font-bold text-white">FacilityMEI</span>
+        <div class="flex items-center gap-4">
+            <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-inner">
+                <i class="bi bi-currency-dollar text-white text-3xl -mt-0.5"></i>
+            </div>
+            <div>
+                <span class="text-2xl font-semibold tracking-tighter text-white">MEI Organizado</span>
+                <span class="text-[10px] text-emerald-500 font-mono tracking-[2px] block -mt-1">FINANCE</span>
+            </div>
         </div>
         <div class="hidden md:flex gap-8 text-sm font-medium">
             <a href="#dores" class="hover:text-accent transition">Problemas Comuns</a>
@@ -222,58 +227,58 @@
     </div>
 </section>
 
-<!-- ⭐ DEPOIMENTOS -->
+<!--  DEPOIMENTOS -->
 <section id="depoimentos" class="py-20 bg-slate-950">
     <div class="max-w-7xl mx-auto px-6">
-        <h2 class="text-4xl font-bold text-center mb-12 text-white">O que os MEIs dizem</h2>
-        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
-            <div class="bg-card p-6 rounded-3xl border border-slate-700">
-                <p class="italic mb-4">"Agora sei exatamente quanto estou lucrando."</p>
-                <div class="flex items-center gap-3">
-                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
-                    <div>
-                        <div class="font-semibold">Ana Silva</div>
-                        <div class="text-sm text-slate-400">MEI – Loja Online</div>
+        <h2 class="text-4xl font-bold text-center mb-12 text-white">Feedbacks reais</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <div class="bg-card p-6 rounded-3xl border border-slate-700 h-full flex flex-col">
+                <p class="italic text-slate-200 leading-relaxed grow">"Eu achava que estava lucrando bem... ate ver que quase 18% do meu faturamento ia embora em taxa e parcelamento. Em 10 minutos entendi onde estava perdendo dinheiro e ajustei meus precos. Hoje sei exatamente quanto sobra no meu bolso."</p>
+                <div class="mt-auto pt-4 border-t border-slate-700/70 flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/Ana-silva.jpg') }}" alt="Ana Silva" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30">
+                    <div class="leading-tight">
+                        <div class="font-semibold text-white">Ana Silva</div>
+                        <div class="text-sm text-slate-400 mt-1">MEI - Loja Online</div>
                     </div>
                 </div>
             </div>
-            <div class="bg-card p-6 rounded-3xl border border-slate-700">
-                <p class="italic mb-4">"Parecia planilha difícil, mas é simples."</p>
-                <div class="flex items-center gap-3">
-                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
-                    <div>
-                        <div class="font-semibold">João Mendes</div>
-                        <div class="text-sm text-slate-400">MEI – Serviços</div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700 h-full flex flex-col">
+                <p class="italic text-slate-200 leading-relaxed grow">"Eu misturava dinheiro pessoal com o da empresa e sempre achava que estava faltando algo. Quando comecei a usar o sistema, vi que o problema nao era falta de venda, era falta de controle."</p>
+                <div class="mt-auto pt-4 border-t border-slate-700/70 flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/João-Mendes.jpg') }}" alt="Joao Mendes" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30">
+                    <div class="leading-tight">
+                        <div class="font-semibold text-white">Joao Mendes</div>
+                        <div class="text-sm text-slate-400 mt-1">MEI - Servicos</div>
                     </div>
                 </div>
             </div>
-            <div class="bg-card p-6 rounded-3xl border border-slate-700">
-                <p class="italic mb-4">"Descobri que estava perdendo dinheiro nas taxas."</p>
-                <div class="flex items-center gap-3">
-                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
-                    <div>
-                        <div class="font-semibold">Maria Oliveira</div>
-                        <div class="text-sm text-slate-400">MEI – Vendas</div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700 h-full flex flex-col">
+                <p class="italic text-slate-200 leading-relaxed grow">"Eu deixava o DAS para a ultima hora e sempre ficava insegura. Agora vejo meu faturamento do mes e ja sei se estou perto do limite. Acabou o medo de surpresa."</p>
+                <div class="mt-auto pt-4 border-t border-slate-700/70 flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/Maria-Oliveira.jpg') }}" alt="Maria Oliveira" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30">
+                    <div class="leading-tight">
+                        <div class="font-semibold text-white">Maria Oliveira</div>
+                        <div class="text-sm text-slate-400 mt-1">MEI - Vendas</div>
                     </div>
                 </div>
             </div>
-            <div class="bg-card p-6 rounded-3xl border border-slate-700">
-                <p class="italic mb-4">"Me salvou no controle do DAS."</p>
-                <div class="flex items-center gap-3">
-                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
-                    <div>
-                        <div class="font-semibold">Pedro Santos</div>
-                        <div class="text-sm text-slate-400">MEI – Freelancer</div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700 h-full flex flex-col">
+                <p class="italic text-slate-200 leading-relaxed grow">"Antes eu achava que ganhava bem. Depois que comecei a registrar tudo, percebi que estava trabalhando muito para lucrar pouco. Ajustei minhas taxas e aumentei minha margem."</p>
+                <div class="mt-auto pt-4 border-t border-slate-700/70 flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/Pedro-Santos.jpg') }}" alt="Pedro Santos" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30">
+                    <div class="leading-tight">
+                        <div class="font-semibold text-white">Pedro Santos</div>
+                        <div class="text-sm text-slate-400 mt-1">MEI - Freelancer</div>
                     </div>
                 </div>
             </div>
-            <div class="bg-card p-6 rounded-3xl border border-slate-700">
-                <p class="italic mb-4">"Uso todo dia."</p>
-                <div class="flex items-center gap-3">
-                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
-                    <div>
-                        <div class="font-semibold">Carla Souza</div>
-                        <div class="text-sm text-slate-400">MEI – Artesanato</div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700 h-full flex flex-col">
+                <p class="italic text-slate-200 leading-relaxed grow">"Eu vendia bastante, mas nao sabia se tinha lucro de verdade. Hoje eu sei quanto custa cada venda e quanto sobra no fim do mes."</p>
+                <div class="mt-auto pt-4 border-t border-slate-700/70 flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/Carla-Souza.jpg') }}" alt="Carla Souza" class="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30">
+                    <div class="leading-tight">
+                        <div class="font-semibold text-white">Carla Souza</div>
+                        <div class="text-sm text-slate-400 mt-1">MEI - Artesanato</div>
                     </div>
                 </div>
             </div>
@@ -287,7 +292,7 @@
     </div>
 </section>
 
-<!-- 🛡️ SEÇÃO DE CONFIANÇA -->
+<!-- 🛡 SEÇÃO DE CONFIANÇA -->
 <section id="confianca" class="py-20 bg-slate-950 border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-6 text-center">
         <h2 class="text-4xl font-bold mb-12 text-white">Construído com segurança e confiança</h2>
@@ -298,11 +303,11 @@
             </div>
             <div class="flex flex-col items-center">
                 <i class="bi bi-file-earmark-lock text-4xl text-accent mb-2"></i>
-                <a href="/privacidade" class="text-slate-300 hover:text-accent">Política de Privacidade</a>
+                <a href="{{ url_for('privacidade') }}" class="text-slate-300 hover:text-accent">Política de Privacidade</a>
             </div>
             <div class="flex flex-col items-center">
                 <i class="bi bi-file-earmark-check text-4xl text-accent mb-2"></i>
-                <a href="/termos" class="text-slate-300 hover:text-accent">Termos de Uso</a>
+                <a href="{{ url_for('termos') }}" class="text-slate-300 hover:text-accent">Termos de Uso</a>
             </div>
             <div class="flex flex-col items-center">
                 <i class="bi bi-lock-fill text-4xl text-accent mb-2"></i>
@@ -322,3 +327,5 @@
 
 </body>
 </html>
+
+
