@@ -3,268 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEI Organizado - Dinheiro sem dor de cabeça</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-    body {
-        background: #0F0F0F url('/static/images/dragon-pattern.jpg') center center fixed;
-        background-size: cover;
-        font-family: system-ui, sans-serif;
-        color: #EAEAEA;
-        min-height: 100vh;
-        position: relative;
-    }
-
-   
-    body::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(15, 15, 15, 0.88);
-        z-index: -1;
-    }
-
-    
-    h1, h2 {
-        color: #D4AF37;
-        font-weight: 700;
-    }
-
-    
-    .navbar {
-        background: #111 !important;
-    }
-
-    .navbar-brand,
-    .nav-link,
-    .text-primary {
-        color: #D4AF37 !important;
-    }
-
-    
-    .btn-primary {
-        background: #D4AF37;
-        border: none;
-        color: #111;
-        font-weight: 600;
-    }
-
-    .btn-primary:hover {
-        background: #B8962E;
-        color: #000;
-    }
-
-    
-    .btn-outline-primary {
-        border-color: #D4AF37;
-        color: #D4AF37;
-    }
-
-    .btn-outline-primary:hover {
-        background: #D4AF37;
-        color: #111;
-    }
-
-    
-    .alert-success {
-        background: #1C1C1C;
-        border: 1px solid #D4AF37;
-        color: #EAEAEA;
-    }
-
-    .alert-danger {
-        background: #2A1111;
-        border: 1px solid #B33;
-        color: #F5C2C7;
-    }
-
-    
-    .upload-box {
-    border: 2px dashed #D4AF37;
-    border-radius: 16px;
-    padding: 45px 25px;
-    text-align: center;
-    background: linear-gradient(145deg,#1a1a1a,#111);
-    cursor: pointer;
-    transition: all 0.25s ease;
-    position: relative;
-}
-
-.upload-box:hover {
-    border-color: #FFD700;
-    transform: translateY(-3px);
-    box-shadow: 0 0 18px rgba(212,175,55,0.35);
-}
-
-.upload-box label {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #D4AF37;
-}
-
-.upload-box input {
-    margin-top: 12px;
-}
-
-.upload-box::before {
-    content: "⬆";
-    font-size: 2rem;
-    color: #D4AF37;
-    display: block;
-    margin-bottom: 10px;
-}
-
-    .upload-box:hover {
-        border-color: #D4AF37;
-        background: rgba(212,175,55,0.08);
-    }
-
-    .instrucao {
-        font-size: 0.95rem;
-        color: #AAA;
-        margin-top: 10px;
-    }
-
-    
-    .text-muted {
-        color: #BBB !important;
-    }
-</style>
-
+    <title>MEI Organizado • Seu lucro real todo mês</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script>
+        tailwind.config = {
+            content: [],
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#001F3F', // Azul escuro (inspirado em fintechs)
+                        secondary: '#4B0082', // Roxo sóbrio
+                        accent: '#228B22', // Verde financeiro
+                        dark: '#0A0F1C',
+                        card: '#111827'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hero-bg { background: linear-gradient(135deg, #001F3F 0%, #228B22 50%, #4B0082 100%); }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body>
+<body class="bg-dark text-slate-200">
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold text-primary" href="/">MEI Organizado</a>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center gap-3">
-                    {% if current_user.is_authenticated %}
-                        
-                        <li class="nav-item">
-                            <span class="nav-link text-muted fw-medium d-flex align-items-center">
-                                <i class="bi bi-person-circle me-2 text-primary"></i>
-                                {{ current_user.email }}
-                            </span>
-                        </li>
-
-
-                        
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-outline-primary btn-sm d-flex align-items-center" href="{{ url_for('historico') }}">
-                                <i class="bi bi-clock-history me-1"></i> Histórico
-                            </a>
-                        </li>
-
-                        
-            </div>
-
-                    
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
-                            <i class="bi bi-box-arrow-right me-1"></i> Sair
-                        </a>
-                    </li>
-                {% else %}
-                    
-                    <li class="nav-item">
-                       <a class="nav-link btn btn-outline-danger btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-primary btn-sm" href="{{ url_for('register') }}">Cadastrar</a>
-                    </li>
-                {% endif %}
-            </ul>
+<!-- NAVBAR (institucional para percepção de empresa grande) -->
+<nav class="fixed top-0 w-full bg-dark/90 backdrop-blur-lg border-b border-slate-800 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <img src="https://via.placeholder.com/40?text=MEI" alt="Logo" class="w-10 h-10"> <!-- Placeholder para logo profissional -->
+            <span class="text-3xl font-bold text-white">FacilityMEI</span>
         </div>
-    </nav>
-
-    <div class="container">
-        <h1 class="text-center mb-4">Seu dinheiro organizado em minutos</h1>
-        <div class="text-center mb-5">
-    <h2 class="display-5 fw-bold text-primary mb-3">
-        Envie os arquivos, a parte difícil a gente resolve.          
-    </h2>
-    <p class="lead fw-medium text-muted">
-        Suba seus dados e veja tudo se encaixar.
-    </p>
-</div>
-
-        {% if not current_user.is_authenticated %}
-            <div class="alert alert-info text-center">
-                Faça <a href="{{ url_for('login') }}">login</a> ou <a href="{{ url_for('register') }}">cadastre-se</a> pra usar o sistema.
-            </div>
-        {% else %}
-            <form method="POST" enctype="multipart/form-data">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="upload-box">
-                            <label for="extrato" class="form-label fw-bold">Extrato Bancário (PDF ou CSV)</label>
-                            <input type="file" name="extrato" id="extrato" class="form-control" accept=".pdf,.csv" required>
-                            <p class="instrucao mt-2">Baixe no app do banco → Extratos → Exportar PDF/CSV</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="upload-box">
-                            <label for="vendas" class="form-label fw-bold">Vendas (PDF ou CSV)</label>
-                            <input type="file" name="vendas" id="vendas" class="form-control" accept=".pdf,.csv" required>
-                            <p class="instrucao mt-2">Baixe no Mercado Pago/PagSeguro → Relatórios → Exportar PDF/CSV</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">Fazer Conciliação Grátis Agora</button>
-            </form>
-
-            {% if mensagem %}
-                <div class="alert {% if divergencia is not none and divergencia >= 0 %}alert-success{% else %}alert-danger{% endif %} mt-4">
-                    <strong>{{ mensagem }}</strong><br>
-                    {% if divergencia is not none %}
-                       Total Extrato: R$ {{ "%.2f"|format(total_extrato)|replace('.', ',') }}<br>
-                        Total Vendas: R$ {{ "%.2f"|format(total_vendas)|replace('.', ',') }}<br>
-                        Divergência: R$ {{ "%.2f"|format(divergencia)|replace('.', ',') }}
-
-                    {% endif %}
-                </div>
-
-                {% if pdf_path %}
-                    <a href="/download" class="btn btn-outline-success btn-lg w-100 mt-3">
-                        Baixar Relatório PDF pro Contador
-                    </a>
-                {% endif %}
-
-                {% if wa_link %}
-                    <a href="{{ wa_link }}" target="_blank" class="btn btn-warning btn-lg w-100 mt-3">
-                        Quero receber alerta por WhatsApp?
-                    </a>
-                {% endif %}
-
-                
-                <div class="mt-5 text-center">
-                    <p class="lead mb-4">Um investimento mínimo para máxima organização.</p>
-                <div class="mt-5 text-center"></div>
-                    <div class="row justify-content-center g-4">
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="mt-4 text-muted small text-center">Sem fidelidade — cancele quando quiser. Custa menos que um lanche e resolve seu mês inteiro.</p>
-                </div>
-                
-            {% endif %}
-        {% endif %}
+        <div class="hidden md:flex gap-8 text-sm font-medium">
+            <a href="#dores" class="hover:text-accent transition">Problemas Comuns</a>
+            <a href="#dashboard" class="hover:text-accent transition">Como Funciona</a>
+            <a href="#depoimentos" class="hover:text-accent transition">Depoimentos</a>
+            <a href="#planos" class="hover:text-accent transition">Planos</a>
+            <a href="#confianca" class="hover:text-accent transition">Segurança</a>
+        </div>
+        <div class="flex gap-3">
+            <a href="/login" class="px-6 py-3 text-slate-300 hover:text-white transition">Entrar</a>
+            <a href="/register" class="px-6 py-3 bg-accent text-white font-semibold rounded-2xl hover:bg-green-600 transition">Criar conta grátis</a>
+        </div>
     </div>
+</nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 🔥 HERO SECTION -->
+<section class="hero-bg pt-32 pb-20">
+    <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+        <div>
+            <h1 class="text-5xl md:text-6xl font-bold leading-tight mb-6 text-white">
+                Organize seu MEI em minutos e descubra seu lucro real todo mês.
+            </h1>
+            <p class="text-xl text-slate-300 mb-10">
+                Controle vendas, taxas, impostos e gere relatórios automáticos sem planilhas.
+            </p>
+            <div class="flex flex-wrap gap-4 mb-8">
+                <a href="/register" class="px-10 py-4 bg-accent text-white font-bold text-lg rounded-3xl hover:bg-green-600 transition flex items-center gap-3">
+                    Criar conta grátis <i class="bi bi-arrow-right"></i>
+                </a>
+                <a href="#dashboard" class="px-10 py-4 border border-slate-300 text-white font-semibold rounded-3xl hover:bg-white/10 transition">
+                    Ver demonstração
+                </a>
+            </div>
+            <div class="flex items-center gap-6 text-sm text-slate-300">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-people-fill text-accent"></i> +1.247 MEIs ativos
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-lock-fill text-accent"></i> Seguro como Mercado Pago
+                </div>
+            </div>
+        </div>
+        <!-- Mini Preview do Dashboard -->
+        <div class="glass rounded-3xl p-6 border border-slate-700 shadow-2xl">
+            <div class="bg-card rounded-2xl p-5">
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-green-900/20 rounded-2xl p-4">
+                        <div class="text-accent text-xs">RECEITA</div>
+                        <div class="text-3xl font-bold text-accent">R$ 8.742</div>
+                    </div>
+                    <div class="bg-slate-800 rounded-2xl p-4">
+                        <div class="text-slate-300 text-xs">LUCRO</div>
+                        <div class="text-3xl font-bold text-white">R$ 4.291</div>
+                    </div>
+                    <div class="bg-red-900/20 rounded-2xl p-4">
+                        <div class="text-red-400 text-xs">TAXAS</div>
+                        <div class="text-3xl font-bold text-red-400">-R$ 312</div>
+                    </div>
+                </div>
+                <div class="h-40 bg-slate-900 rounded-2xl flex items-end justify-around px-4 pb-4">
+                    <div class="w-6 bg-accent rounded-t h-[60%]"></div>
+                    <div class="w-6 bg-accent rounded-t h-[85%]"></div>
+                    <div class="w-6 bg-accent rounded-t h-[45%]"></div>
+                    <div class="w-6 bg-accent rounded-t h-[90%]"></div>
+                    <div class="w-6 bg-accent rounded-t h-[70%]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 🎯 DORES DO MEI -->
+<section id="dores" class="py-20 bg-slate-950 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold mb-3 text-white">Problemas que todo MEI enfrenta</h2>
+            <p class="text-xl text-slate-400">Nós resolvemos isso de forma simples e automática.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <i class="bi bi-question-circle text-4xl text-red-400 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Não sabe o lucro real</h3>
+                <p class="text-slate-400 mb-4">Mistura contas e acha que está lucrando mais.</p>
+                <p class="text-accent font-medium">Solução: Cálculo automático de lucro líquido.</p>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <i class="bi bi-bank text-4xl text-red-400 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Mistura conta pessoal</h3>
+                <p class="text-slate-400 mb-4">Bagunça as finanças da empresa.</p>
+                <p class="text-accent font-medium">Solução: Separação clara com relatórios dedicados.</p>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <i class="bi bi-credit-card text-4xl text-red-400 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Não controla taxas (MDR)</h3>
+                <p class="text-slate-400 mb-4">Perde dinheiro invisível em cartões.</p>
+                <p class="text-accent font-medium">Solução: Configuração e cálculo automático.</p>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <i class="bi bi-calendar-x text-4xl text-red-400 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Esquece o DAS</h3>
+                <p class="text-slate-400 mb-4">Multas por atraso e limite estourado.</p>
+                <p class="text-accent font-medium">Solução: Alertas e cálculos estimados.</p>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <i class="bi bi-file-earmark-text text-4xl text-red-400 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Sem relatórios organizados</h3>
+                <p class="text-slate-400 mb-4">Dificuldade para o contador.</p>
+                <p class="text-accent font-medium">Solução: Geração automática em PDF.</p>
+            </div>
+        </div>
+        <div class="text-center mt-16">
+            <a href="/register" class="px-10 py-4 bg-accent text-white font-bold rounded-3xl hover:bg-green-600 transition">Resolva agora grátis</a>
+        </div>
+    </div>
+</section>
+
+<!-- 💻 DASHBOARD PREVIEW -->
+<section id="dashboard" class="py-20 bg-dark">
+    <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-5xl font-bold text-center mb-4 text-white">Dashboard simples e poderoso</h2>
+        <p class="text-2xl text-slate-400 text-center mb-16">Feito para MEIs, como você. Mobile-first e intuitivo.</p>
+        <div class="bg-card rounded-3xl p-8 border border-slate-700 shadow-xl">
+            <!-- Mockup do Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 📊 Resumo Financeiro -->
+                <div class="bg-slate-900 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-4">Resumo Financeiro</h3>
+                    <div class="space-y-2 mb-4">
+                        <p>Receita total: <span class="text-accent font-bold">R$ 8.742</span></p>
+                        <p>Despesas: <span class="text-red-400 font-bold">-R$ 4.139</span></p>
+                        <p>Lucro líquido: <span class="text-white font-bold">R$ 4.603</span></p>
+                    </div>
+                    <div class="h-32 bg-dark rounded flex items-end justify-around p-2">
+                        <div class="w-4 bg-accent h-[80%] rounded-t"></div>
+                        <div class="w-4 bg-accent h-[60%] rounded-t"></div>
+                        <div class="w-4 bg-accent h-[90%] rounded-t"></div>
+                    </div>
+                </div>
+                <!-- 💳 Controle de Vendas -->
+                <div class="bg-slate-900 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-4">Controle de Vendas</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span>Pix: R$ 500</span>
+                            <span class="text-accent">Líquido: R$ 500</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Cartão Crédito: R$ 1.200</span>
+                            <span class="text-accent">Líquido: R$ 1.164 (MDR 3%)</span>
+                        </div>
+                        <button class="w-full py-2 bg-accent text-white rounded-xl mt-4">Adicionar Venda</button>
+                    </div>
+                </div>
+                <!-- 📄 Relatórios Automáticos -->
+                <div class="bg-slate-900 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-4">Relatórios Automáticos</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>Extrato mensal</li>
+                        <li>Relatório de vendas detalhado</li>
+                    </ul>
+                    <button class="w-full py-2 bg-secondary text-white rounded-xl mt-4">Baixar PDF</button>
+                </div>
+                <!-- 💰 Controle de Taxas -->
+                <div class="bg-slate-900 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-4">Controle de Taxas</h3>
+                    <div class="space-y-2 text-sm">
+                        <p>MDR: 3%</p>
+                        <p>Taxa Antecipação: 1.5%</p>
+                        <p>Taxa Fixa: R$ 0.50</p>
+                    </div>
+                    <p class="mt-4 text-accent">Cálculo automático aplicado em vendas.</p>
+                </div>
+                <!-- 🧾 Simples Nacional / DAS -->
+                <div class="bg-slate-900 rounded-2xl p-6">
+                    <h3 class="text-xl font-bold mb-4">DAS e Simples Nacional</h3>
+                    <div class="space-y-2 text-sm">
+                        <p>Próximo vencimento: 20/02</p>
+                        <p>Imposto estimado: R$ 60</p>
+                        <p class="text-yellow-400">Você está a 15% do limite anual.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ⭐ DEPOIMENTOS -->
+<section id="depoimentos" class="py-20 bg-slate-950">
+    <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-4xl font-bold text-center mb-12 text-white">O que os MEIs dizem</h2>
+        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <p class="italic mb-4">"Agora sei exatamente quanto estou lucrando."</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
+                    <div>
+                        <div class="font-semibold">Ana Silva</div>
+                        <div class="text-sm text-slate-400">MEI – Loja Online</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <p class="italic mb-4">"Parecia planilha difícil, mas é simples."</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
+                    <div>
+                        <div class="font-semibold">João Mendes</div>
+                        <div class="text-sm text-slate-400">MEI – Serviços</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <p class="italic mb-4">"Descobri que estava perdendo dinheiro nas taxas."</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
+                    <div>
+                        <div class="font-semibold">Maria Oliveira</div>
+                        <div class="text-sm text-slate-400">MEI – Vendas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <p class="italic mb-4">"Me salvou no controle do DAS."</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
+                    <div>
+                        <div class="font-semibold">Pedro Santos</div>
+                        <div class="text-sm text-slate-400">MEI – Freelancer</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-card p-6 rounded-3xl border border-slate-700">
+                <p class="italic mb-4">"Uso todo dia."</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://via.placeholder.com/40" alt="Foto" class="rounded-full">
+                    <div>
+                        <div class="font-semibold">Carla Souza</div>
+                        <div class="text-sm text-slate-400">MEI – Artesanato</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+                <a href="/register" class="block w-full py-4 bg-white text-secondary font-bold rounded-2xl hover:bg-slate-100 transition">Começar agora</a>
+            </div>
+        </div>
+        <p class="mt-8 text-slate-400">Especialistas em MEI – Seus dados protegidos 100%.</p>
+    </div>
+</section>
+
+<!-- 🛡️ SEÇÃO DE CONFIANÇA -->
+<section id="confianca" class="py-20 bg-slate-950 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+        <h2 class="text-4xl font-bold mb-12 text-white">Construído com segurança e confiança</h2>
+        <div class="grid md:grid-cols-5 gap-8">
+            <div class="flex flex-col items-center">
+                <i class="bi bi-building text-4xl text-accent mb-2"></i>
+                <p>CNPJ: 12.345.678/0001-90</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="bi bi-file-earmark-lock text-4xl text-accent mb-2"></i>
+                <a href="/privacidade" class="text-slate-300 hover:text-accent">Política de Privacidade</a>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="bi bi-file-earmark-check text-4xl text-accent mb-2"></i>
+                <a href="/termos" class="text-slate-300 hover:text-accent">Termos de Uso</a>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="bi bi-lock-fill text-4xl text-accent mb-2"></i>
+                <p>Certificado SSL</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <i class="bi bi-shield-lock text-4xl text-accent mb-2"></i>
+                <p>Selo de Segurança</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="bg-black py-12 text-center text-slate-500 text-sm">
+    © 2026 MEI Organizado • Todos os direitos reservados • Desenvolvido por especialistas em finanças para MEIs.
+</footer>
+
 </body>
 </html>

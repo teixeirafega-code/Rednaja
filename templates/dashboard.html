@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard • MEI Organizado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { 
+            background: #05070f; 
+            color: #e2e8f0; 
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .card {
+            background: #0f172a;
+            border: 1px solid #1e2937;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover {
+            border-color: #10b981;
+            transform: translateY(-6px);
+            box-shadow: 0 25px 50px -12px rgb(16 185 129 / 0.15);
+        }
+        .lucro-card {
+            background: linear-gradient(145deg, #10b98110, #0f172a);
+            border: 2px solid #10b981;
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.08);
+        }
+        .number {
+            font-size: 2.75rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            line-height: 1;
+        }
+        .upload-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .upload-zone:hover {
+            border-color: #34d399;
+            background: #0a1421;
+        }
+        .btn-pro {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: all 0.3s ease;
+        }
+        .btn-pro:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -10px rgb(52 211 153);
+        }
+        .upgrade-btn {
+            background: linear-gradient(90deg, #eab308, #f59e0b);
+            box-shadow: 0 10px 20px -5px rgb(234 179 8 / 0.4);
+        }
+        .upgrade-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px -5px rgb(234 179 8 / 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <!-- NAVBAR PREMIUM -->
+    <nav class="bg-[#0a0f1c] border-b border-slate-800/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-inner">
+                    <i class="bi bi-currency-dollar text-white text-3xl -mt-0.5"></i>
+                </div>
+                <div>
+                    <span class="text-2xl font-semibold tracking-tighter text-white">MEI Organizado</span>
+                    <span class="text-[10px] text-emerald-500 font-mono tracking-[2px] block -mt-1">FINANCE</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-8">
+                <a href="{{ url_for('add_sale') }}" 
+                   class="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition">
+                    <i class="bi bi-plus-circle-dotted text-lg"></i>
+                    <span class="hidden sm:inline">Nova Venda</span>
+                </a>
+                
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <div class="text-sm font-medium text-white">{{ current_user.email.split('@')[0] }}</div>
+                        <div class="text-[10px] text-emerald-400 font-medium">MEI Ativo</div>
+                    </div>
+                    <div class="w-9 h-9 bg-slate-700 rounded-2xl flex items-center justify-center text-lg">
+                        👤
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('logout') }}" 
+                   class="text-slate-400 hover:text-red-400 transition">
+                    <i class="bi bi-box-arrow-right text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-8 pt-12">
+
+        <!-- HEADER -->
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <div class="uppercase tracking-[3px] text-emerald-500 text-xs font-medium">Painel Financeiro</div>
+                <h1 class="text-5xl font-semibold tracking-tighter text-white">Visão Geral</h1>
+            </div>
+            <div class="text-right text-sm text-slate-400">
+                Atualizado agora<br>
+                <span class="text-emerald-400 font-medium">{{ (now or 'hoje') }}</span>
+            </div>
+        </div>
+
+        <!-- 1. CARDS RESUMO -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+            <!-- Receita -->
+            <div class="card rounded-3xl p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+                        <i class="bi bi-arrow-up-circle text-3xl text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium tracking-widest text-slate-400">RECEITA TOTAL</div>
+                        <div class="text-emerald-400 text-sm font-medium">este mês</div>
+                    </div>
+                </div>
+                <div class="number text-white">{{ receita_total | default(0) | format_br }}</div>
+            </div>
+
+            <!-- Despesas -->
+            <div class="card rounded-3xl p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-11 h-11 bg-red-500/10 rounded-2xl flex items-center justify-center">
+                        <i class="bi bi-arrow-down-circle text-3xl text-red-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium tracking-widest text-slate-400">DESPESAS</div>
+                        <div class="text-red-400 text-sm font-medium">este mês</div>
+                    </div>
+                </div>
+                <div class="number text-white">-{{ despesas | default(0) | format_br }}</div>
+            </div>
+
+            <!-- Lucro Líquido -->
+            <div class="lucro-card rounded-3xl p-8 relative overflow-hidden">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-11 h-11 bg-white/10 rounded-2xl flex items-center justify-center">
+                        <i class="bi bi-wallet-fill text-3xl text-white"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium tracking-widest text-emerald-300">LUCRO LÍQUIDO</div>
+                        <div class="text-emerald-400 text-sm font-medium">seu resultado real</div>
+                    </div>
+                </div>
+                <div class="number text-white">{{ lucro_liquido | default(0) | format_br }}</div>
+                <div class="absolute -right-6 -bottom-8 text-[120px] font-black text-emerald-500/5 leading-none">PRO</div>
+            </div>
+
+            <!-- DAS -->
+            <div class="card rounded-3xl p-8 {% if alerta_vencimento %}ring-2 ring-offset-4 ring-offset-[#05070f] ring-amber-400/30{% endif %}">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-11 h-11 bg-amber-500/10 rounded-2xl flex items-center justify-center">
+                        <i class="bi bi-calendar3 text-3xl text-amber-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium tracking-widest text-slate-400">DAS ESTIMADO</div>
+                        <div class="text-amber-400 text-sm font-medium">Simples Nacional</div>
+                    </div>
+                </div>
+                <div class="number text-white">{{ das_estimado | default(0) | format_br }}</div>
+                
+                {% if alerta_vencimento %}
+                <div class="mt-8 inline-flex items-center gap-3 bg-amber-500/10 border border-amber-400/30 text-amber-300 text-sm font-medium px-6 py-3 rounded-3xl">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-400"></span>
+                    </span>
+                    Vence em {{ dias_para_vencimento }} dias
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 2. GRÁFICO -->
+        <div class="card rounded-3xl p-10 mb-14">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-semibold flex items-center gap-3">
+                    <i class="bi bi-graph-up-arrow text-emerald-500"></i>
+                    Evolução Mensal
+                </h2>
+                <div class="text-xs bg-slate-800 px-5 py-2 rounded-3xl text-slate-400 font-medium">ÚLTIMOS 12 MESES</div>
+            </div>
+            <div class="h-96">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. UPLOAD -->
+        <div class="card rounded-3xl p-12 mb-14">
+            <div class="max-w-2xl mx-auto text-center">
+                <div class="inline-flex items-center gap-3 bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-3xl mb-8">
+                    <i class="bi bi-shield-check text-2xl"></i>
+                    <span class="font-medium tracking-wide">Conciliação Inteligente com IA</span>
+                </div>
+                
+                <h2 class="text-4xl font-semibold tracking-tight mb-3">Processar seus dados</h2>
+                <p class="text-slate-400 text-lg mb-12">Extrato bancário + relatório de vendas = lucro real em segundos</p>
+
+                <form method="POST" enctype="multipart/form-data" class="space-y-10">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="upload-zone border-2 border-dashed border-slate-600 rounded-3xl p-10 text-center">
+                            <i class="bi bi-bank2 text-7xl text-slate-500 mb-6 block"></i>
+                            <div class="font-semibold text-lg mb-1">Extrato Bancário</div>
+                            <div class="text-sm text-slate-400 mb-8">PDF, CSV, XLSX, OFX, JSON</div>
+                            <input type="file" name="extrato" id="extrato" class="hidden" required>
+                            <label for="extrato" class="cursor-pointer inline-flex items-center gap-4 bg-slate-800 hover:bg-slate-700 px-8 py-4 rounded-2xl text-sm font-medium transition">
+                                <i class="bi bi-upload"></i>
+                                Selecionar arquivo
+                            </label>
+                        </div>
+
+                        <div class="upload-zone border-2 border-dashed border-slate-600 rounded-3xl p-10 text-center">
+                            <i class="bi bi-receipt-cutoff text-7xl text-slate-500 mb-6 block"></i>
+                            <div class="font-semibold text-lg mb-1">Relatório de Vendas</div>
+                            <div class="text-sm text-slate-400 mb-8">PDF, CSV, XLSX</div>
+                            <input type="file" name="vendas" id="vendas" class="hidden" required>
+                            <label for="vendas" class="cursor-pointer inline-flex items-center gap-4 bg-slate-800 hover:bg-slate-700 px-8 py-4 rounded-2xl text-sm font-medium transition">
+                                <i class="bi bi-upload"></i>
+                                Selecionar arquivo
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                            class="btn-pro w-full py-7 text-xl font-bold rounded-3xl text-white flex items-center justify-center gap-4 shadow-2xl shadow-emerald-900/40">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        PROCESSAR CONCILIAÇÃO AGORA
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 4. RESULTADO -->
+        {% if mensagem %}
+        <div class="card rounded-3xl p-14 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 to-transparent">
+            <div class="flex justify-center mb-10">
+                <div class="flex items-center gap-5 bg-emerald-900/30 border border-emerald-500/30 px-10 py-5 rounded-3xl">
+                    <i class="bi bi-check-circle-fill text-5xl text-emerald-400"></i>
+                    <div>
+                        <span class="text-3xl font-semibold text-white">Conciliação realizada</span>
+                        <p class="text-emerald-300">{{ mensagem }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+                <div class="text-center result-metric">
+                    <div class="text-slate-400 text-sm font-medium mb-2">EXTRATO</div>
+                    <div class="number text-xl">{{ total_extrato | default(0) | format_br }}</div>
+                </div>
+                <div class="text-center result-metric">
+                    <div class="text-slate-400 text-sm font-medium mb-2">VENDAS</div>
+                    <div class="number text-xl">{{ total_vendas | default(0) | format_br }}</div>
+                </div>
+                <div class="text-center result-metric border-l border-slate-700 pl-8">
+                    <div class="text-slate-400 text-sm font-medium mb-2">DIVERGÊNCIA</div>
+                    <div class="number text-3xl {% if divergencia >= 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                        {{ divergencia | default(0) | format_br }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-6 mt-16">
+                {% if pdf_path %}
+                <a href="{{ url_for('download') }}" 
+                   class="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 px-10 py-6 rounded-3xl font-semibold text-lg transition-all">
+                    <i class="bi bi-file-earmark-pdf text-2xl"></i>
+                    Baixar Relatório PDF
+                </a>
+                {% endif %}
+                {% if wa_link %}
+                <a href="{{ wa_link }}" target="_blank"
+                   class="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 px-10 py-6 rounded-3xl font-semibold text-lg transition-all">
+                    <i class="bi bi-whatsapp text-2xl"></i>
+                    Compartilhar no WhatsApp
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- LINKS / BOTÃO DE UPGRADE (AGORA VAI PARA escolher_plano.html) -->
+        <div class="flex justify-center gap-10 text-sm pt-12">
+            <a href="{{ url_for('historico') }}" class="flex items-center gap-3 text-slate-400 hover:text-white transition">
+                <i class="bi bi-clock-history"></i>
+                <span class="font-medium">Histórico Completo</span>
+            </a>
+            
+            <!-- 🔥 BOTÃO ALTERADO -->
+            <a href="{{ url_for('escolher_plano') }}" 
+               class="upgrade-btn flex items-center gap-3 px-8 py-4 rounded-3xl font-semibold text-base text-black transition-all">
+                <i class="bi bi-gem"></i>
+                <span>Ver Planos e Assinar Pro</span>
+            </a>
+        </div>
+    </main>
+
+    <!-- GRÁFICO -->
+    <script>
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        const labels = {{ grafico_linha | map(attribute=0) | list | tojson | safe }};
+        const valores = {{ grafico_linha | map(attribute=1) | list | tojson | safe }};
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Lucro Líquido (R$)',
+                    data: valores,
+                    backgroundColor: '#10b981',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e2937',
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 18, weight: '700' },
+                        displayColors: false,
+                        callbacks: {
+                            label: (ctx) => 'R$ ' + ctx.raw.toLocaleString('pt-BR')
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#1e2937' },
+                        ticks: { color: '#64748b', font: { size: 13 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#64748b', font: { size: 13 } }
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
