@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session
+from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session, abort
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -32,6 +32,24 @@ warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+
+def load_env_file(path=".env"):
+    if not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_env_file()
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
@@ -41,6 +59,15 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 ALLOWED_EXTENSIONS = {".pdf", ".csv", ".xlsx", ".ofx", ".json"}
 ALLOWED_VENDAS_EXTENSIONS = {".pdf", ".csv", ".xlsx", ".json"}
 ALLOWED_EXTRATO_EXTENSIONS = {".pdf", ".csv", ".xlsx", ".ofx", ".json"}
+ADMIN_ALLOWED_EMAILS = {
+    email.strip().lower()
+    for email in os.getenv(
+        "ADMIN_EMAILS",
+        "fernando1224gabriel@gmail.com,derickadm@gmail.com",
+    ).split(",")
+    if email.strip()
+}
+ADMIN_DEFAULT_PASSWORD = os.getenv("ADMIN_DEFAULT_PASSWORD", "Facilitymei12@24")
 
 
 def format_br(valor):
@@ -93,7 +120,7 @@ def initialize_db():
         conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS users
-                (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_pro INTEGER DEFAULT 0);
+                (id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT, is_pro INTEGER DEFAULT 0, created_at TEXT, last_login_at TEXT);
             CREATE TABLE IF NOT EXISTS conciliacoes
                 (id INTEGER PRIMARY KEY, user_id INTEGER, data TEXT, total_extrato REAL, total_vendas REAL, divergencia REAL);
             CREATE TABLE IF NOT EXISTS sales
@@ -101,6 +128,29 @@ def initialize_db():
                 valor_bruto REAL, taxa_percentual REAL, taxa_fixa REAL, valor_liquido REAL, status TEXT, created_at TEXT);
             """
         )
+        user_columns = {row[1] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
+        if "created_at" not in user_columns:
+            conn.execute("ALTER TABLE users ADD COLUMN created_at TEXT")
+        if "last_login_at" not in user_columns:
+            conn.execute("ALTER TABLE users ADD COLUMN last_login_at TEXT")
+        conn.execute("UPDATE users SET created_at = COALESCE(created_at, DATETIME('now'))")
+
+        admin_password_hash = generate_password_hash(ADMIN_DEFAULT_PASSWORD)
+        for admin_email in ADMIN_ALLOWED_EMAILS:
+            existing_admin = conn.execute(
+                "SELECT id FROM users WHERE lower(email) = lower(?)",
+                (admin_email,),
+            ).fetchone()
+            if existing_admin:
+                conn.execute(
+                    "UPDATE users SET password = ?, created_at = COALESCE(created_at, DATETIME('now')) WHERE id = ?",
+                    (admin_password_hash, existing_admin[0]),
+                )
+            else:
+                conn.execute(
+                    "INSERT INTO users (email, password, is_pro, created_at, last_login_at) VALUES (?, ?, 1, DATETIME('now'), NULL)",
+                    (admin_email, admin_password_hash),
+                )
         conn.commit()
 
 
@@ -142,7 +192,11 @@ def register():
         email = form.email.data
         password = generate_password_hash(form.password.data)
         try:
-            db_execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password), commit=True)
+            db_execute(
+                "INSERT INTO users (email, password, created_at, last_login_at) VALUES (?, ?, DATETIME('now'), DATETIME('now'))",
+                (email, password),
+                commit=True,
+            )
 
             row = db_fetchone("SELECT id, password, is_pro FROM users WHERE email = ?", (email,))
             if row:
@@ -162,6 +216,7 @@ def login():
         email = form.email.data
         row = db_fetchone("SELECT id, password, is_pro FROM users WHERE email = ?", (email,))
         if row and check_password_hash(row[1], form.password.data):
+            db_execute("UPDATE users SET last_login_at = DATETIME('now') WHERE id = ?", (row[0],), commit=True)
             user = User(row[0], email, row[2])
             login_user(user)
             flash("Login feito!", "success")
@@ -176,6 +231,160 @@ def logout():
     logout_user()
     flash("Saiu da conta.", "info")
     return redirect(url_for("login"))
+
+
+def is_admin_email(email):
+    return (email or "").strip().lower() in ADMIN_ALLOWED_EMAILS
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    if not is_admin_email(current_user.email):
+        abort(403)
+
+    pro_monthly_price = float(os.getenv("PRO_MONTHLY_PRICE", "0") or "0")
+
+    admin_stats = db_fetchone(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM users) AS total_users,
+            (SELECT COUNT(*) FROM users WHERE date(created_at) = date('now', 'localtime')) AS users_created_today,
+            (SELECT COUNT(*) FROM users WHERE date(created_at) >= date('now', 'localtime', '-6 day')) AS users_last_7_days,
+            (SELECT COUNT(*) FROM users WHERE is_pro = 1) AS pro_users
+        """
+    )
+
+    active_users_this_month_row = db_fetchone(
+        """
+        SELECT COUNT(DISTINCT user_id) AS active_users_this_month
+        FROM (
+            SELECT id AS user_id
+            FROM users
+            WHERE strftime('%Y-%m', last_login_at) = strftime('%Y-%m', 'now', 'localtime')
+            UNION
+            SELECT user_id
+            FROM sales
+            WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime')
+            UNION
+            SELECT user_id
+            FROM conciliacoes
+            WHERE strftime('%Y-%m', data) = strftime('%Y-%m', 'now', 'localtime')
+        ) activity
+        """
+    )
+
+    total_users_global = int((admin_stats["total_users"] if admin_stats else 0) or 0)
+    users_created_today = int((admin_stats["users_created_today"] if admin_stats else 0) or 0)
+    users_last_7_days = int((admin_stats["users_last_7_days"] if admin_stats else 0) or 0)
+    pro_users = int((admin_stats["pro_users"] if admin_stats else 0) or 0)
+    active_users_this_month = int((active_users_this_month_row["active_users_this_month"] if active_users_this_month_row else 0) or 0)
+    pro_conversion_pct = round((pro_users / total_users_global) * 100, 2) if total_users_global > 0 else 0.0
+    estimated_monthly_revenue = (pro_users * pro_monthly_price) if pro_monthly_price > 0 else None
+
+    email_filter = (request.args.get("email") or "").strip()
+    created_date_filter = (request.args.get("created_date") or "").strip()
+
+    where_clauses = ["1=1"]
+    params = []
+
+    if email_filter:
+        where_clauses.append("lower(u.email) LIKE ?")
+        params.append(f"%{email_filter.lower()}%")
+
+    if created_date_filter:
+        where_clauses.append("date(u.created_at) = date(?)")
+        params.append(created_date_filter)
+
+    where_sql = " AND ".join(where_clauses)
+
+    users = db_fetchall(
+        f"""
+        SELECT
+            u.id,
+            u.email,
+            u.password,
+            u.is_pro,
+            u.created_at,
+            u.last_login_at,
+            COALESCE(c.conciliacoes_count, 0) AS conciliacoes_count,
+            COALESCE(s.sales_count, 0) AS sales_count
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS conciliacoes_count
+            FROM conciliacoes
+            GROUP BY user_id
+        ) c ON c.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS sales_count
+            FROM sales
+            GROUP BY user_id
+        ) s ON s.user_id = u.id
+        WHERE {where_sql}
+        ORDER BY u.id DESC
+        """
+        ,
+        tuple(params),
+    )
+    users = [dict(row) for row in users]
+    filtered_users_count = len(users)
+    users_with_login = sum(1 for user in users if user.get("last_login_at"))
+
+    return render_template(
+        "admin.html",
+        users=users,
+        total_users=total_users_global,
+        users_created_today=users_created_today,
+        users_last_7_days=users_last_7_days,
+        active_users_this_month=active_users_this_month,
+        pro_conversion_pct=pro_conversion_pct,
+        estimated_monthly_revenue=estimated_monthly_revenue,
+        filtered_users_count=filtered_users_count,
+        users_with_login=users_with_login,
+        email_filter=email_filter,
+        created_date_filter=created_date_filter,
+        now=datetime.datetime.now(),
+    )
+
+
+@app.post("/admin/users/<int:user_id>/action")
+@login_required
+def admin_user_action(user_id):
+    if not is_admin_email(current_user.email):
+        abort(403)
+
+    action = (request.form.get("action") or "").strip()
+    email_filter = (request.form.get("redirect_email") or "").strip()
+    created_date_filter = (request.form.get("redirect_created_date") or "").strip()
+
+    row = db_fetchone("SELECT id, email, is_pro FROM users WHERE id = ?", (user_id,))
+    if not row:
+        flash("Usuario nao encontrado.", "warning")
+    else:
+        target_email = (row["email"] or "").strip().lower()
+        is_protected_admin = target_email in ADMIN_ALLOWED_EMAILS
+
+        if action == "promote":
+            db_execute("UPDATE users SET is_pro = 1 WHERE id = ?", (user_id,), commit=True)
+            flash(f"Usuario {row['email']} promovido para Pro.", "success")
+        elif action == "remove_pro":
+            if is_protected_admin:
+                flash("Nao e permitido remover plano Pro de um admin protegido.", "warning")
+            else:
+                db_execute("UPDATE users SET is_pro = 0 WHERE id = ?", (user_id,), commit=True)
+                flash(f"Plano Pro removido de {row['email']}.", "info")
+        elif action == "delete":
+            if is_protected_admin:
+                flash("Nao e permitido excluir um admin protegido.", "danger")
+            else:
+                db_execute("DELETE FROM conciliacoes WHERE user_id = ?", (user_id,), commit=True)
+                db_execute("DELETE FROM sales WHERE user_id = ?", (user_id,), commit=True)
+                db_execute("DELETE FROM users WHERE id = ?", (user_id,), commit=True)
+                flash(f"Usuario {row['email']} excluido com sucesso.", "success")
+        else:
+            flash("Acao invalida.", "danger")
+
+    return redirect(url_for("admin", email=email_filter, created_date=created_date_filter))
 
 
 @app.errorhandler(413)
@@ -1160,3 +1369,5 @@ def export(tipo):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+

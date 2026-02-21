@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Facilitymei</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5CGX5P9EXW"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-5CGX5P9EXW');
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { background: #05070f; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
+        .card { background: #0f172a; border: 1px solid #1e2937; }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+    <nav class="bg-[#0a0f1c] border-b border-slate-800/80 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 md:px-8 py-5 flex justify-between items-center">
+            <div>
+                <div class="text-xs uppercase tracking-[3px] text-emerald-500 font-medium">Admin</div>
+                <h1 class="text-2xl font-semibold tracking-tighter text-white">Painel de Usuarios</h1>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="text-slate-300 hover:text-white text-sm font-medium transition">
+                <i class="bi bi-arrow-left mr-2"></i>Voltar ao dashboard
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-10 space-y-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="space-y-3">
+            {% for category, message in messages %}
+            <div class="card rounded-2xl px-5 py-4 border-l-4 {% if category == 'success' %}border-emerald-400{% elif category == 'danger' %}border-red-400{% elif category == 'warning' %}border-amber-400{% else %}border-sky-400{% endif %}">
+                <span class="text-sm">{{ message }}</span>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
+
+        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Total de usuarios</div>
+                <div class="text-3xl font-bold text-white mt-2">{{ total_users }}</div>
+            </div>
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Usuarios criados hoje</div>
+                <div class="text-3xl font-bold text-white mt-2">{{ users_created_today }}</div>
+            </div>
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Usuarios nos ultimos 7 dias</div>
+                <div class="text-3xl font-bold text-white mt-2">{{ users_last_7_days }}</div>
+            </div>
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Usuarios ativos este mes</div>
+                <div class="text-3xl font-bold text-white mt-2">{{ active_users_this_month }}</div>
+            </div>
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">% conversao para PRO</div>
+                <div class="text-3xl font-bold text-white mt-2">{{ pro_conversion_pct }}%</div>
+            </div>
+            <div class="card rounded-2xl p-5">
+                <div class="text-xs uppercase tracking-wider text-slate-400">Receita mensal estimada</div>
+                <div class="text-3xl font-bold text-white mt-2">
+                    {% if estimated_monthly_revenue is not none %}
+                    R$ {{ estimated_monthly_revenue | format_br }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="card rounded-2xl p-5">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="email" class="block text-xs uppercase tracking-wider text-slate-400 mb-2">Buscar por email</label>
+                    <input id="email" name="email" type="text" value="{{ email_filter or '' }}" placeholder="ex: cliente@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label for="created_date" class="block text-xs uppercase tracking-wider text-slate-400 mb-2">Data de criacao</label>
+                    <input id="created_date" name="created_date" type="date" value="{{ created_date_filter or '' }}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 rounded-xl px-4 py-3 text-sm font-semibold text-white transition">Buscar</button>
+                    <a href="{{ url_for('admin') }}" class="w-full text-center bg-slate-800 hover:bg-slate-700 rounded-xl px-4 py-3 text-sm font-semibold text-white transition">Limpar</a>
+                </div>
+            </form>
+        </section>
+
+        <section class="card rounded-3xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-900/70 text-slate-300">
+                        <tr>
+                            <th class="text-left px-5 py-4 font-semibold">ID</th>
+                            <th class="text-left px-5 py-4 font-semibold">Email</th>
+                            <th class="text-left px-5 py-4 font-semibold">PRO</th>
+                            <th class="text-left px-5 py-4 font-semibold">Data de cadastro</th>
+                            <th class="text-left px-5 py-4 font-semibold">Qtd vendas cadastradas</th>
+                            <th class="text-left px-5 py-4 font-semibold">Qtd conciliacoes feitas</th>
+                            <th class="text-left px-5 py-4 font-semibold">Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr class="border-t border-slate-800/80 hover:bg-slate-900/30 transition">
+                            <td class="px-5 py-4 text-slate-300">{{ user['id'] }}</td>
+                            <td class="px-5 py-4 text-white font-medium">{{ user['email'] }}</td>
+                            <td class="px-5 py-4">{% if user['is_pro'] %}<span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg">Sim</span>{% else %}<span class="text-xs bg-slate-700/40 text-slate-300 px-2 py-1 rounded-lg">Nao</span>{% endif %}</td>
+                            <td class="px-5 py-4 text-slate-300">{{ user['created_at'] or '-' }}</td>
+                            <td class="px-5 py-4 text-slate-200">{{ user['sales_count'] }}</td>
+                            <td class="px-5 py-4 text-slate-200">{{ user['conciliacoes_count'] }}</td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    {% if user['is_pro'] %}
+                                    <form method="POST" action="{{ url_for('admin_user_action', user_id=user['id']) }}">
+                                        <input type="hidden" name="action" value="remove_pro">
+                                        <input type="hidden" name="redirect_email" value="{{ email_filter or '' }}">
+                                        <input type="hidden" name="redirect_created_date" value="{{ created_date_filter or '' }}">
+                                        <button type="submit" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg">Remover Pro</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST" action="{{ url_for('admin_user_action', user_id=user['id']) }}">
+                                        <input type="hidden" name="action" value="promote">
+                                        <input type="hidden" name="redirect_email" value="{{ email_filter or '' }}">
+                                        <input type="hidden" name="redirect_created_date" value="{{ created_date_filter or '' }}">
+                                        <button type="submit" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg">Promover Pro</button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="POST" action="{{ url_for('admin_user_action', user_id=user['id']) }}" onsubmit="return confirm('Excluir este usuario? Esta acao nao pode ser desfeita.');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="redirect_email" value="{{ email_filter or '' }}">
+                                        <input type="hidden" name="redirect_created_date" value="{{ created_date_filter or '' }}">
+                                        <button type="submit" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg">Excluir</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="px-5 py-10 text-center text-slate-400">Nenhum usuario encontrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
