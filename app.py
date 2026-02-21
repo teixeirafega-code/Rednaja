@@ -689,6 +689,27 @@ def dashboard():
     categoria_taxa = 0.04
     das_estimado = faturamento_anual * categoria_taxa
 
+    # ==================== RETIRADA SEGURA ====================
+    # Regra solicitada:
+    # Lucro real = Receita - Despesas - DAS (do mes)
+    # Reserva obrigatoria = 20% do lucro real
+    # Retirada segura = Lucro real - Reserva
+    das_mensal_estimado = receita_total * categoria_taxa
+    lucro_real_mes = receita_total - despesas - das_mensal_estimado
+    reserva_minima = max(lucro_real_mes * 0.20, 0.0)
+    retirada_segura = max(lucro_real_mes - reserva_minima, 0.0)
+    retirada_recomendada = retirada_segura > 0
+    caixa_real = lucro_real_mes
+    saldo_acumulado = 0.0
+    despesas_media_mensal = despesas
+    if retirada_recomendada:
+        retirada_titulo = "Retirada segura hoje"
+        retirada_subtexto = "Ja considerando reserva de 20% do lucro real."
+    else:
+        retirada_titulo = "Retirada nao recomendada"
+        retirada_subtexto = "Seu lucro real nao cobre uma retirada segura no momento."
+    # ==========================================================
+
     # ======================= SCORE FINANCEIRO =======================
     margem_lucro = (lucro_liquido / receita_total) if receita_total > 0 else 0.0
     if margem_lucro > 0.30:
@@ -810,6 +831,15 @@ def dashboard():
         faturamento_anual=faturamento_anual,
         perto_limite=perto_limite,
         das_estimado=das_estimado,
+        saldo_acumulado=saldo_acumulado,
+        das_mensal_estimado=das_mensal_estimado,
+        caixa_real=caixa_real,
+        despesas_media_mensal=despesas_media_mensal,
+        reserva_minima=reserva_minima,
+        retirada_segura=retirada_segura,
+        retirada_recomendada=retirada_recomendada,
+        retirada_titulo=retirada_titulo,
+        retirada_subtexto=retirada_subtexto,
         alerta_vencimento=alerta_vencimento,
         dias_para_vencimento=dias_para_vencimento,
         finance_score=finance_score,

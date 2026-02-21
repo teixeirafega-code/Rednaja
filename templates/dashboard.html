@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard • MEI Organizado</title>
+    <title>Dashboard • FacilityMei</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -71,7 +71,7 @@
                     <i class="bi bi-currency-dollar text-white text-3xl -mt-0.5"></i>
                 </div>
                 <div>
-                    <span class="text-2xl font-semibold tracking-tighter text-white">MEI Organizado</span>
+                    <span class="text-2xl font-semibold tracking-tighter text-white">FacilityMei</span>
                     <span class="text-[10px] text-emerald-500 font-mono tracking-[2px] block -mt-1">FINANCE</span>
                 </div>
             </div>
@@ -234,7 +234,45 @@
             </div>
         </div>
 
-        <!-- 3. UPLOAD -->
+        <!-- RETIRADA SEGURA -->
+        <div class="rounded-3xl p-8 mb-10 border-2 {% if retirada_recomendada %}border-emerald-500/40 bg-emerald-950/20{% else %}border-red-500/40 bg-red-950/20{% endif %}">
+            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                <div>
+                    <div class="text-xs uppercase tracking-[2px] text-slate-400 mb-2">Caixa e retirada</div>
+                    <h2 class="text-3xl font-semibold text-white">
+                        {% if retirada_recomendada %}💰{% else %}🔴{% endif %} {{ retirada_titulo }}
+                    </h2>
+                    <p class="text-slate-300 mt-2">{{ retirada_subtexto }}</p>
+                </div>
+                <div class="text-left lg:text-right">
+                    <div class="text-5xl font-black leading-none {% if retirada_recomendada %}text-emerald-400{% else %}text-red-400{% endif %}">
+                        R$ {{ retirada_segura | default(0) | format_br }}
+                    </div>
+                    <div class="text-sm text-slate-300 mt-2">Valor disponivel para retirada hoje</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
+                <div class="rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
+                    <div class="text-xs uppercase tracking-widest text-slate-400">Lucro real do mes</div>
+                    <div class="mt-2 text-xl font-bold text-white">R$ {{ caixa_real | default(0) | format_br }}</div>
+                    <div class="text-xs text-slate-400 mt-1">Receita - despesas - DAS</div>
+                </div>
+                <div class="rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
+                    <div class="text-xs uppercase tracking-widest text-slate-400">Reserva 20%</div>
+                    <div class="mt-2 text-xl font-bold text-white">R$ {{ reserva_minima | default(0) | format_br }}</div>
+                    <div class="text-xs text-slate-400 mt-1">Parcela de seguranca do lucro real</div>
+                </div>
+                <div class="rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
+                    <div class="text-xs uppercase tracking-widest text-slate-400">DAS mensal estimado</div>
+                    <div class="mt-2 text-xl font-bold text-white">R$ {{ das_mensal_estimado | default(0) | format_br }}</div>
+                    <div class="text-xs text-slate-400 mt-1">Baseado na receita do mes</div>
+                </div>
+            </div>
+        </div>
+
+        
+<!-- 3. UPLOAD -->
         <div class="card rounded-3xl p-12 mb-14">
             <div class="max-w-2xl mx-auto text-center">
                 <div class="inline-flex items-center gap-3 bg-emerald-500/10 text-emerald-400 px-6 py-3 rounded-3xl mb-8">
