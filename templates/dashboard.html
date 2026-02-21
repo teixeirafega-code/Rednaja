@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <style>
+        <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
         body { 
@@ -68,10 +68,10 @@
         <div class="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-inner">
-                    <i class="bi bi-currency-dollar text-white text-3xl -mt-0.5"></i>
+                    <img src="{{ url_for('static', filename='images/LOGO-SITE.jpeg') }}" alt="Logo Facilitymei" class="w-full h-full object-cover rounded-2xl">
                 </div>
                 <div>
-                    <span class="text-2xl font-semibold tracking-tighter text-white">FacilityMei</span>
+                    <span class="text-2xl font-semibold tracking-tighter text-white">Facilitymei</span>
                     <span class="text-[10px] text-emerald-500 font-mono tracking-[2px] block -mt-1">FINANCE</span>
                 </div>
             </div>
@@ -220,20 +220,19 @@
             </div>
         </div>
 
-        <!-- 2. GRÁFICO -->
+                        <!-- 2. GRAFICO DE LINHA -->
         <div class="card rounded-3xl p-10 mb-14">
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-2xl font-semibold flex items-center gap-3">
                     <i class="bi bi-graph-up-arrow text-emerald-500"></i>
-                    Evolução Mensal
+                    Evolucao Mensal
                 </h2>
-                <div class="text-xs bg-slate-800 px-5 py-2 rounded-3xl text-slate-400 font-medium">ÚLTIMOS 12 MESES</div>
+                <div class="text-xs bg-slate-800 px-5 py-2 rounded-3xl text-slate-400 font-medium">ULTIMOS 12 MESES</div>
             </div>
             <div class="h-96">
                 <canvas id="financeChart"></canvas>
             </div>
         </div>
-
         <!-- RETIRADA SEGURA -->
         <div class="rounded-3xl p-8 mb-10 border-2 {% if retirada_recomendada %}border-emerald-500/40 bg-emerald-950/20{% else %}border-red-500/40 bg-red-950/20{% endif %}">
             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
@@ -408,54 +407,69 @@
             </a>
         </div>
     </main>
-
-    <!-- GRÁFICO -->
     <script>
-        const ctx = document.getElementById('financeChart').getContext('2d');
-        const labels = {{ grafico_linha | map(attribute=0) | list | tojson | safe }};
-        const valores = {{ grafico_linha | map(attribute=1) | list | tojson | safe }};
+        const ctx = document.getElementById('financeChart');
+        if (ctx) {
+            const rawLabels = {{ grafico_linha | map(attribute=0) | list | tojson | safe }};
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const labels = rawLabels.map((valor) => {
+                const [ano, mes] = String(valor).split('-');
+                const idx = Number(mes) - 1;
+                const nomeMes = meses[idx] || mes;
+                return `${nomeMes}/${String(ano).slice(-2)}`;
+            });
+            const valores = {{ grafico_linha | map(attribute=1) | list | tojson | safe }};
 
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Lucro Líquido (R$)',
-                    data: valores,
-                    backgroundColor: '#10b981',
-                    borderRadius: 8,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e2937',
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 18, weight: '700' },
-                        displayColors: false,
-                        callbacks: {
-                            label: (ctx) => 'R$ ' + ctx.raw.toLocaleString('pt-BR')
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lucro Liquido (R$)',
+                        data: valores,
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        backgroundColor: 'rgba(16, 185, 129, 0.18)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#052e22',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e2937',
+                            displayColors: false,
+                            callbacks: {
+                                label: (tooltipItem) => 'R$ ' + Number(tooltipItem.raw || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: '#1e2937' },
+                            ticks: {
+                                color: '#64748b',
+                                callback: (value) => 'R$ ' + Number(value).toLocaleString('pt-BR')
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b' }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#1e2937' },
-                        ticks: { color: '#64748b', font: { size: 13 } }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#64748b', font: { size: 13 } }
-                    }
                 }
-            }
-        });
+            });
+        }
     </script>
-
 </body>
 </html>
+
+

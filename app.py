@@ -661,21 +661,24 @@ def dashboard():
     despesas = (row[0] if row else 0.0) or 0.0
     lucro_liquido = receita_total - despesas
 
-    grafico_linha = db_fetchall(
+    grafico_linha_rows = db_fetchall(
         """
         SELECT strftime('%Y-%m', data) as mes, SUM(valor_liquido) as liquido
         FROM sales WHERE user_id = ? GROUP BY mes ORDER BY mes DESC LIMIT 12
     """,
         (current_user.id,),
     )
-
-    grafico_barras = db_fetchall(
-        """
-        SELECT metodo_pagamento, SUM(valor_liquido) as liquido
-        FROM sales WHERE user_id = ? GROUP BY metodo_pagamento
-    """,
-        (current_user.id,),
-    )
+    grafico_mapa = {str(row[0]): float(row[1] or 0.0) for row in grafico_linha_rows}
+    hoje_mes = datetime.date.today().replace(day=1)
+    grafico_linha = []
+    for offset in range(11, -1, -1):
+        ano = hoje_mes.year
+        mes = hoje_mes.month - offset
+        while mes <= 0:
+            mes += 12
+            ano -= 1
+        chave = f"{ano:04d}-{mes:02d}"
+        grafico_linha.append((chave, grafico_mapa.get(chave, 0.0)))
 
     year = datetime.date.today().strftime("%Y")
     row = db_fetchone(
@@ -722,6 +725,7 @@ def dashboard():
     primeiro_dia_mes = datetime.date.today().replace(day=1)
     mes_anterior_data = primeiro_dia_mes - datetime.timedelta(days=1)
     mes_anterior = mes_anterior_data.strftime("%Y-%m")
+    mes_anterior_label = mes_anterior_data.strftime("%m/%Y")
 
     row = db_fetchone(
         "SELECT SUM(valor_bruto) FROM sales WHERE user_id = ? AND strftime('%Y-%m', data) = ? AND valor_bruto > 0",
@@ -827,7 +831,6 @@ def dashboard():
         despesas=despesas,
         lucro_liquido=lucro_liquido,
         grafico_linha=grafico_linha,
-        grafico_barras=grafico_barras,
         faturamento_anual=faturamento_anual,
         perto_limite=perto_limite,
         das_estimado=das_estimado,
@@ -847,6 +850,9 @@ def dashboard():
         finance_score_tone=finance_score_tone,
         score_criterios=score_criterios,
         score_motivo=" ".join(motivos),
+        variacao_lucro_pct=variacao_lucro_pct,
+        tendencia_status=tendencia_status,
+        mes_anterior_label=mes_anterior_label,
         ultima_conciliacao=ultima_conciliacao,
         formato_br=formato_br,
     )
