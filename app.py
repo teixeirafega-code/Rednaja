@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session, abort
+﻿from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session, abort
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -733,6 +733,10 @@ def map_columns():
 
     return render_template("map_columns.html", form=form)
 
+
+@app.route("/health")
+def health():
+    return "ok", 200
 
 @app.route("/", methods=["GET"])
 def home():
