@@ -29,6 +29,12 @@
             box-shadow: 0 10px 15px -3px rgb(16 185 129 / 0.4);
         }
         .btn-pro:hover { transform: translateY(-2px); }
+        .support-fab {
+            position: fixed;
+            left: 1rem;
+            bottom: 1rem;
+            z-index: 80;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -148,6 +154,72 @@
         </div>
 
     </main>
+
+    <button id="openSupportModal" type="button" class="support-fab bg-emerald-900/85 hover:bg-emerald-800 text-emerald-100 text-xs font-medium px-4 py-3 rounded-full border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition">
+        <i class="bi bi-headset mr-1"></i> Falar com suporte
+    </button>
+
+    <div id="supportModal" class="hidden fixed inset-0 z-[95]">
+        <div id="supportBackdrop" class="absolute inset-0 bg-black/65"></div>
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-3xl border border-slate-700 bg-[#0b1220] p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Qual foi o problema?</h3>
+                    <button id="closeSupportModal" type="button" class="text-slate-400 hover:text-white">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="supportForm" class="space-y-4">
+                    <select id="supportReason" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" required>
+                        <option value="">Selecione o motivo</option>
+                        <option>Erro ao subir extrato</option>
+                        <option>Erro no calculo</option>
+                        <option>Duvida sobre score</option>
+                        <option>Erro nos planos</option>
+                        <option>Outro</option>
+                    </select>
+                    <textarea id="supportExtra" rows="3" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" placeholder="Detalhe rapido (opcional)"></textarea>
+                    <button type="submit" class="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 transition">
+                        Abrir WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supportModal = document.getElementById('supportModal');
+        const openSupportModal = document.getElementById('openSupportModal');
+        const closeSupportModal = document.getElementById('closeSupportModal');
+        const supportBackdrop = document.getElementById('supportBackdrop');
+        const supportForm = document.getElementById('supportForm');
+        const supportReason = document.getElementById('supportReason');
+        const supportExtra = document.getElementById('supportExtra');
+        const SUPPORT_PHONE = '5515991464183';
+
+        const openSupportBox = () => supportModal && supportModal.classList.remove('hidden');
+        const closeSupportBox = () => supportModal && supportModal.classList.add('hidden');
+
+        if (openSupportModal) openSupportModal.addEventListener('click', openSupportBox);
+        if (closeSupportModal) closeSupportModal.addEventListener('click', closeSupportBox);
+        if (supportBackdrop) supportBackdrop.addEventListener('click', closeSupportBox);
+
+        if (supportForm) {
+            supportForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const motivo = (supportReason && supportReason.value || '').trim();
+                if (!motivo) return;
+                const extra = (supportExtra && supportExtra.value || '').trim();
+                const msg =
+                    `Ola, preciso de suporte no Facilitymei.%0A` +
+                    `Problema: ${encodeURIComponent(motivo)}%0A` +
+                    (extra ? `Detalhes: ${encodeURIComponent(extra)}%0A` : '') +
+                    `Pagina: Escolher Plano`;
+                window.open(`https://wa.me/${SUPPORT_PHONE}?text=${msg}`, '_blank', 'noopener');
+                closeSupportBox();
+            });
+        }
+    </script>
 
 </body>
 </html>

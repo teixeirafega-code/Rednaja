@@ -59,6 +59,24 @@
             transform: translateY(-3px);
             box-shadow: 0 15px 25px -5px rgb(234 179 8 / 0.5);
         }
+        .floating-mov-btn {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            z-index: 80;
+            background: linear-gradient(90deg, #f97316, #ef4444);
+            box-shadow: 0 18px 32px -12px rgb(239 68 68 / 0.65);
+        }
+        .floating-mov-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 34px -10px rgb(249 115 22 / 0.70);
+        }
+        .support-fab {
+            position: fixed;
+            left: 1rem;
+            bottom: 1rem;
+            z-index: 80;
+        }
     </style>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5CGX5P9EXW"></script>
@@ -85,11 +103,12 @@
             </div>
             
             <div class="flex items-center gap-8">
-                <a href="{{ url_for('add_sale') }}" 
-                   class="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition">
-                    <i class="bi bi-plus-circle-dotted text-lg"></i>
-                    <span class="hidden sm:inline">Nova Venda</span>
-                </a>
+                <button type="button"
+                   id="openQuickMovementNav"
+                   class="flex items-center gap-2 text-sm font-semibold text-orange-300 hover:text-orange-200 transition">
+                    <i class="bi bi-fire text-lg"></i>
+                    <span class="hidden sm:inline">+ Nova movimentacao</span>
+                </button>
                 
                 <div class="flex items-center gap-3">
                     <div class="text-right">
@@ -123,26 +142,43 @@
             </div>
         </div>
 
+        <div class="card rounded-3xl p-6 mb-8 border border-orange-500/30 bg-gradient-to-r from-orange-900/20 to-red-900/10">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div>
+                    <div class="text-xs uppercase tracking-[2px] text-slate-400">Lucro do dia</div>
+                    <div id="lucroHojeValue" class="text-2xl font-bold text-white mt-1">{{ lucro_hoje | default(0) | format_br }}</div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-[2px] text-slate-400">Limite anual usado</div>
+                    <div id="limiteAnualValue" class="text-2xl font-bold text-white mt-1">{{ "%.1f"|format(limite_ratio_pct or 0) }}%</div>
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-[2px] text-slate-400">Projecao inteligente</div>
+                    <div id="projecaoTexto" class="text-sm text-orange-200 mt-2">{{ projecao_texto }}</div>
+                </div>
+            </div>
+        </div>
+
         <!-- SCORE FINANCEIRO -->
         <div class="card rounded-3xl p-8 mb-10 border-2 {% if finance_score_tone == 'green' %}border-emerald-500/40{% elif finance_score_tone == 'yellow' %}border-amber-400/40{% else %}border-red-500/40{% endif %}">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-7">
                 <div>
                     <div class="text-xs uppercase tracking-[2px] text-slate-400 mb-2">Termometro do negocio</div>
                     <h2 class="text-3xl font-semibold text-white">Score Financeiro</h2>
-                    <p class="text-slate-300 mt-2">{{ score_motivo }}</p>
+                    <p id="scoreMotivo" class="text-slate-300 mt-2">{{ score_motivo }}</p>
                 </div>
                 <div class="text-left lg:text-right">
-                    <div class="text-6xl font-black leading-none {% if finance_score_tone == 'green' %}text-emerald-400{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-400{% endif %}">
+                    <div id="financeScoreValue" class="text-6xl font-black leading-none {% if finance_score_tone == 'green' %}text-emerald-400{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-400{% endif %}">
                         {{ finance_score }}
                     </div>
-                    <div class="text-sm font-semibold mt-1 {% if finance_score_tone == 'green' %}text-emerald-300{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-300{% endif %}">
+                    <div id="financeScoreLabel" class="text-sm font-semibold mt-1 {% if finance_score_tone == 'green' %}text-emerald-300{% elif finance_score_tone == 'yellow' %}text-amber-300{% else %}text-red-300{% endif %}">
                         {{ finance_score_label }}
                     </div>
                 </div>
             </div>
 
             <div class="w-full h-3 rounded-full bg-slate-800 mb-7 overflow-hidden">
-                <div class="h-full {% if finance_score_tone == 'green' %}bg-emerald-500{% elif finance_score_tone == 'yellow' %}bg-amber-400{% else %}bg-red-500{% endif %}" style="width: {{ finance_score }}%"></div>
+                <div id="financeScoreBar" class="h-full {% if finance_score_tone == 'green' %}bg-emerald-500{% elif finance_score_tone == 'yellow' %}bg-amber-400{% else %}bg-red-500{% endif %}" style="width: {{ finance_score }}%"></div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -171,7 +207,7 @@
                         <div class="text-emerald-400 text-sm font-medium">este mês</div>
                     </div>
                 </div>
-                <div class="number text-white">{{ receita_total | default(0) | format_br }}</div>
+                <div id="receitaTotalValue" class="number text-white">{{ receita_total | default(0) | format_br }}</div>
             </div>
 
             <!-- Despesas -->
@@ -185,7 +221,7 @@
                         <div class="text-red-400 text-sm font-medium">este mês</div>
                     </div>
                 </div>
-                <div class="number text-white">-{{ despesas | default(0) | format_br }}</div>
+                <div id="despesasValue" class="number text-white">-{{ despesas | default(0) | format_br }}</div>
             </div>
 
             <!-- Lucro Líquido -->
@@ -199,7 +235,7 @@
                         <div class="text-emerald-400 text-sm font-medium">seu resultado real</div>
                     </div>
                 </div>
-                <div class="number text-white">{{ lucro_liquido | default(0) | format_br }}</div>
+                <div id="lucroLiquidoValue" class="number text-white">{{ lucro_liquido | default(0) | format_br }}</div>
                 <div class="absolute -right-6 -bottom-8 text-[120px] font-black text-emerald-500/5 leading-none">PRO</div>
             </div>
 
@@ -415,6 +451,88 @@
             </a>
         </div>
     </main>
+
+    <button id="openQuickMovementFab" type="button" class="floating-mov-btn text-white font-bold px-6 py-4 rounded-full flex items-center gap-3 transition">
+        <i class="bi bi-plus-lg text-xl"></i>
+        <span class="hidden sm:inline">Nova movimentacao</span>
+    </button>
+
+    <div id="quickMovementModal" class="hidden fixed inset-0 z-[90]">
+        <div id="quickMovementBackdrop" class="absolute inset-0 bg-black/70"></div>
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="w-full max-w-lg rounded-3xl border border-slate-700 bg-[#0b1220] p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xl font-semibold text-white">Nova movimentacao</h3>
+                    <button id="closeQuickMovementModal" type="button" class="text-slate-400 hover:text-white">
+                        <i class="bi bi-x-lg text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="quickMovementForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-2">Tipo</label>
+                        <select name="tipo" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" required>
+                            <option value="venda">Venda</option>
+                            <option value="despesa">Despesa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-2">Valor</label>
+                        <input name="valor" type="text" inputmode="decimal" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" placeholder="0,00" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-2">Forma de pagamento</label>
+                        <input name="metodo_pagamento" type="text" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" placeholder="Pix, Cartao, Dinheiro..." required>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-2">Categoria (opcional)</label>
+                        <input name="categoria" type="text" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" placeholder="Ex.: Marketing, Mercado, Servico">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-2">Data</label>
+                        <input name="data" type="date" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" value="{{ today_iso }}" required>
+                    </div>
+                    <button id="quickMovementSubmit" type="submit" class="w-full rounded-2xl bg-orange-500 hover:bg-orange-400 text-black font-bold py-3 transition">
+                        Salvar em menos de 20s
+                    </button>
+                    <p id="quickMovementFeedback" class="hidden text-sm"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <button id="openSupportModal" type="button" class="support-fab bg-emerald-900/85 hover:bg-emerald-800 text-emerald-100 text-xs font-medium px-4 py-3 rounded-full border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition">
+        <i class="bi bi-headset mr-1"></i> Falar com suporte
+    </button>
+
+    <div id="supportModal" class="hidden fixed inset-0 z-[95]">
+        <div id="supportBackdrop" class="absolute inset-0 bg-black/65"></div>
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-3xl border border-slate-700 bg-[#0b1220] p-6 shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Qual foi o problema?</h3>
+                    <button id="closeSupportModal" type="button" class="text-slate-400 hover:text-white">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <form id="supportForm" class="space-y-4">
+                    <select id="supportReason" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" required>
+                        <option value="">Selecione o motivo</option>
+                        <option>Erro ao subir extrato</option>
+                        <option>Erro no calculo</option>
+                        <option>Duvida sobre score</option>
+                        <option>Erro nos planos</option>
+                        <option>Outro</option>
+                    </select>
+                    <textarea id="supportExtra" rows="3" class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-white" placeholder="Detalhe rapido (opcional)"></textarea>
+                    <button type="submit" class="w-full rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 transition">
+                        Abrir WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         const ctx = document.getElementById('financeChart');
         if (ctx) {
@@ -473,6 +591,157 @@
                             ticks: { color: '#64748b' }
                         }
                     }
+                }
+            });
+        }
+
+        const quickModal = document.getElementById('quickMovementModal');
+        const openNavBtn = document.getElementById('openQuickMovementNav');
+        const openFabBtn = document.getElementById('openQuickMovementFab');
+        const closeModalBtn = document.getElementById('closeQuickMovementModal');
+        const modalBackdrop = document.getElementById('quickMovementBackdrop');
+        const quickForm = document.getElementById('quickMovementForm');
+        const quickFeedback = document.getElementById('quickMovementFeedback');
+        const quickSubmit = document.getElementById('quickMovementSubmit');
+        const supportModal = document.getElementById('supportModal');
+        const openSupportModal = document.getElementById('openSupportModal');
+        const closeSupportModal = document.getElementById('closeSupportModal');
+        const supportBackdrop = document.getElementById('supportBackdrop');
+        const supportForm = document.getElementById('supportForm');
+        const supportReason = document.getElementById('supportReason');
+        const supportExtra = document.getElementById('supportExtra');
+
+        const scoreValue = document.getElementById('financeScoreValue');
+        const scoreLabel = document.getElementById('financeScoreLabel');
+        const scoreBar = document.getElementById('financeScoreBar');
+        const scoreMotivo = document.getElementById('scoreMotivo');
+        const receitaTotalValue = document.getElementById('receitaTotalValue');
+        const despesasValue = document.getElementById('despesasValue');
+        const lucroLiquidoValue = document.getElementById('lucroLiquidoValue');
+        const lucroHojeValue = document.getElementById('lucroHojeValue');
+        const limiteAnualValue = document.getElementById('limiteAnualValue');
+        const projecaoTexto = document.getElementById('projecaoTexto');
+
+        const toneToTextClass = {
+            green: 'text-emerald-400',
+            yellow: 'text-amber-300',
+            red: 'text-red-400',
+        };
+        const toneToLabelClass = {
+            green: 'text-emerald-300',
+            yellow: 'text-amber-300',
+            red: 'text-red-300',
+        };
+        const toneToBarClass = {
+            green: 'bg-emerald-500',
+            yellow: 'bg-amber-400',
+            red: 'bg-red-500',
+        };
+
+        const openQuickModal = () => {
+            if (!quickModal) return;
+            quickModal.classList.remove('hidden');
+        };
+        const closeQuickModal = () => {
+            if (!quickModal) return;
+            quickModal.classList.add('hidden');
+        };
+
+        if (openNavBtn) openNavBtn.addEventListener('click', openQuickModal);
+        if (openFabBtn) openFabBtn.addEventListener('click', openQuickModal);
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeQuickModal);
+        if (modalBackdrop) modalBackdrop.addEventListener('click', closeQuickModal);
+
+        const SUPPORT_PHONE = '5515991464183';
+        const openSupportBox = () => supportModal && supportModal.classList.remove('hidden');
+        const closeSupportBox = () => supportModal && supportModal.classList.add('hidden');
+        if (openSupportModal) openSupportModal.addEventListener('click', openSupportBox);
+        if (closeSupportModal) closeSupportModal.addEventListener('click', closeSupportBox);
+        if (supportBackdrop) supportBackdrop.addEventListener('click', closeSupportBox);
+
+        if (supportForm) {
+            supportForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const motivo = (supportReason && supportReason.value || '').trim();
+                if (!motivo) return;
+                const extra = (supportExtra && supportExtra.value || '').trim();
+                const msg =
+                    `Ola, preciso de suporte no Facilitymei.%0A` +
+                    `Problema: ${encodeURIComponent(motivo)}%0A` +
+                    (extra ? `Detalhes: ${encodeURIComponent(extra)}%0A` : '') +
+                    `Pagina: Dashboard`;
+                window.open(`https://wa.me/${SUPPORT_PHONE}?text=${msg}`, '_blank', 'noopener');
+                closeSupportBox();
+            });
+        }
+
+        const setFeedback = (text, ok) => {
+            if (!quickFeedback) return;
+            quickFeedback.classList.remove('hidden', 'text-red-300', 'text-emerald-300');
+            quickFeedback.classList.add(ok ? 'text-emerald-300' : 'text-red-300');
+            quickFeedback.textContent = text;
+        };
+
+        const applyDashboardUpdate = (data) => {
+            if (!data) return;
+            if (scoreValue) scoreValue.textContent = String(data.finance_score ?? 0);
+            if (scoreLabel) scoreLabel.textContent = String(data.finance_score_label || '');
+            if (scoreMotivo) scoreMotivo.textContent = String(data.score_motivo || '');
+            if (scoreBar) scoreBar.style.width = `${Number(data.finance_score || 0)}%`;
+
+            if (scoreValue) {
+                scoreValue.classList.remove('text-emerald-400', 'text-amber-300', 'text-red-400');
+                scoreValue.classList.add(toneToTextClass[data.finance_score_tone] || 'text-red-400');
+            }
+            if (scoreLabel) {
+                scoreLabel.classList.remove('text-emerald-300', 'text-amber-300', 'text-red-300');
+                scoreLabel.classList.add(toneToLabelClass[data.finance_score_tone] || 'text-red-300');
+            }
+            if (scoreBar) {
+                scoreBar.classList.remove('bg-emerald-500', 'bg-amber-400', 'bg-red-500');
+                scoreBar.classList.add(toneToBarClass[data.finance_score_tone] || 'bg-red-500');
+            }
+
+            if (receitaTotalValue) receitaTotalValue.textContent = String(data.receita_total_fmt || 'R$ 0,00');
+            if (despesasValue) despesasValue.textContent = `-${String(data.despesas_fmt || 'R$ 0,00')}`;
+            if (lucroLiquidoValue) lucroLiquidoValue.textContent = String(data.lucro_liquido_fmt || 'R$ 0,00');
+            if (lucroHojeValue) lucroHojeValue.textContent = String(data.lucro_hoje_fmt || 'R$ 0,00');
+            if (limiteAnualValue) limiteAnualValue.textContent = String(data.limite_ratio_fmt || '0,0%');
+            if (projecaoTexto) projecaoTexto.textContent = String(data.projecao_texto || '');
+        };
+
+        if (quickForm) {
+            quickForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(quickForm);
+                const payload = Object.fromEntries(formData.entries());
+
+                quickSubmit.disabled = true;
+                quickSubmit.textContent = 'Salvando...';
+
+                try {
+                    const response = await fetch('{{ url_for("dashboard_movimentacao_rapida") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.ok) {
+                        throw new Error(result.message || 'Erro ao salvar movimentacao.');
+                    }
+                    applyDashboardUpdate(result.dashboard);
+                    setFeedback(result.message || 'Movimentacao salva.', true);
+                    setTimeout(() => {
+                        closeQuickModal();
+                        quickForm.reset();
+                        const dataInput = quickForm.querySelector('input[name="data"]');
+                        if (dataInput) dataInput.value = '{{ today_iso }}';
+                    }, 700);
+                } catch (error) {
+                    setFeedback(error.message || 'Nao foi possivel salvar agora.', false);
+                } finally {
+                    quickSubmit.disabled = false;
+                    quickSubmit.textContent = 'Salvar em menos de 20s';
                 }
             });
         }

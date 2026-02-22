@@ -1,5 +1,6 @@
 ﻿from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session, abort
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask import jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo
@@ -18,6 +19,7 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 import os
 import datetime
+import calendar
 import warnings
 import urllib.parse
 import sqlite3
@@ -860,18 +862,40 @@ def dashboard():
                 except Exception:
                     pass
 
-    month = datetime.date.today().strftime("%Y-%m")
+    metrics = _build_dashboard_metrics(current_user.id)
+
+    ultima_conciliacao = session.get("ultima_conciliacao")
+
+    return render_template(
+        "dashboard.html",
+        mensagem=mensagem,
+        divergencia=divergencia,
+        total_extrato=total_extrato,
+        total_vendas=total_vendas,
+        pdf_path=pdf_path,
+        wa_link=wa_link,
+        **metrics,
+        ultima_conciliacao=ultima_conciliacao,
+        formato_br=formato_br,
+    )
+
+
+def _build_dashboard_metrics(user_id):
+    hoje = datetime.date.today()
+    month = hoje.strftime("%Y-%m")
+    year = hoje.strftime("%Y")
+
     row = db_fetchone(
         "SELECT SUM(valor_bruto) FROM sales WHERE user_id = ? AND strftime('%Y-%m', data) = ? AND valor_bruto > 0",
-        (current_user.id, month),
+        (user_id, month),
     )
-    receita_total = (row[0] if row else 0.0) or 0.0
+    receita_total = float((row[0] if row else 0.0) or 0.0)
 
     row = db_fetchone(
         "SELECT SUM(ABS(valor_bruto)) FROM sales WHERE user_id = ? AND strftime('%Y-%m', data) = ? AND valor_bruto < 0",
-        (current_user.id, month),
+        (user_id, month),
     )
-    despesas = (row[0] if row else 0.0) or 0.0
+    despesas = float((row[0] if row else 0.0) or 0.0)
     lucro_liquido = receita_total - despesas
 
     grafico_linha_rows = db_fetchall(
@@ -879,10 +903,10 @@ def dashboard():
         SELECT strftime('%Y-%m', data) as mes, SUM(valor_liquido) as liquido
         FROM sales WHERE user_id = ? GROUP BY mes ORDER BY mes DESC LIMIT 12
     """,
-        (current_user.id,),
+        (user_id,),
     )
     grafico_mapa = {str(row[0]): float(row[1] or 0.0) for row in grafico_linha_rows}
-    hoje_mes = datetime.date.today().replace(day=1)
+    hoje_mes = hoje.replace(day=1)
     grafico_linha = []
     for offset in range(11, -1, -1):
         ano = hoje_mes.year
@@ -893,23 +917,29 @@ def dashboard():
         chave = f"{ano:04d}-{mes:02d}"
         grafico_linha.append((chave, grafico_mapa.get(chave, 0.0)))
 
-    year = datetime.date.today().strftime("%Y")
     row = db_fetchone(
         "SELECT SUM(valor_bruto) FROM sales WHERE user_id = ? AND strftime('%Y', data) = ? AND valor_bruto > 0",
-        (current_user.id, year),
+        (user_id, year),
     )
-    faturamento_anual = (row[0] if row else 0.0) or 0.0
+    faturamento_anual = float((row[0] if row else 0.0) or 0.0)
+
+    row = db_fetchone(
+        "SELECT SUM(valor_bruto) FROM sales WHERE user_id = ? AND date(data) = date(?) AND valor_bruto > 0",
+        (user_id, hoje.isoformat()),
+    )
+    receita_hoje = float((row[0] if row else 0.0) or 0.0)
+    row = db_fetchone(
+        "SELECT SUM(ABS(valor_bruto)) FROM sales WHERE user_id = ? AND date(data) = date(?) AND valor_bruto < 0",
+        (user_id, hoje.isoformat()),
+    )
+    despesa_hoje = float((row[0] if row else 0.0) or 0.0)
+    lucro_hoje = receita_hoje - despesa_hoje
 
     limite_mei = 81000.0
     perto_limite = faturamento_anual > (limite_mei * 0.8)
     categoria_taxa = 0.04
     das_estimado = faturamento_anual * categoria_taxa
 
-    # ==================== RETIRADA SEGURA ====================
-    # Regra solicitada:
-    # Lucro real = Receita - Despesas - DAS (do mes)
-    # Reserva obrigatoria = 20% do lucro real
-    # Retirada segura = Lucro real - Reserva
     das_mensal_estimado = receita_total * categoria_taxa
     lucro_real_mes = receita_total - despesas - das_mensal_estimado
     reserva_minima = max(lucro_real_mes * 0.20, 0.0)
@@ -924,9 +954,7 @@ def dashboard():
     else:
         retirada_titulo = "Retirada nao recomendada"
         retirada_subtexto = "Seu lucro real nao cobre uma retirada segura no momento."
-    # ==========================================================
 
-    # ======================= SCORE FINANCEIRO =======================
     margem_lucro = (lucro_liquido / receita_total) if receita_total > 0 else 0.0
     if margem_lucro > 0.30:
         margem_status, margem_pontos = "forte", 25
@@ -935,21 +963,21 @@ def dashboard():
     else:
         margem_status, margem_pontos = "risco", 0
 
-    primeiro_dia_mes = datetime.date.today().replace(day=1)
+    primeiro_dia_mes = hoje.replace(day=1)
     mes_anterior_data = primeiro_dia_mes - datetime.timedelta(days=1)
     mes_anterior = mes_anterior_data.strftime("%Y-%m")
     mes_anterior_label = mes_anterior_data.strftime("%m/%Y")
 
     row = db_fetchone(
         "SELECT SUM(valor_bruto) FROM sales WHERE user_id = ? AND strftime('%Y-%m', data) = ? AND valor_bruto > 0",
-        (current_user.id, mes_anterior),
+        (user_id, mes_anterior),
     )
-    receita_anterior = (row[0] if row else 0.0) or 0.0
+    receita_anterior = float((row[0] if row else 0.0) or 0.0)
     row = db_fetchone(
         "SELECT SUM(ABS(valor_bruto)) FROM sales WHERE user_id = ? AND strftime('%Y-%m', data) = ? AND valor_bruto < 0",
-        (current_user.id, mes_anterior),
+        (user_id, mes_anterior),
     )
-    despesas_anterior = (row[0] if row else 0.0) or 0.0
+    despesas_anterior = float((row[0] if row else 0.0) or 0.0)
     lucro_anterior = receita_anterior - despesas_anterior
 
     if lucro_anterior > 0:
@@ -1014,60 +1042,130 @@ def dashboard():
         {"titulo": "Despesas", "status": despesa_status, "pontos": despesa_pontos, "detalhe": f"{proporcao_despesa * 100:.1f}%"},
         {"titulo": "Limite MEI", "status": limite_status, "pontos": limite_pontos, "detalhe": f"{limite_ratio * 100:.1f}%"},
     ]
-    # ===============================================================
 
-    hoje = datetime.date.today()
     if hoje.day > 20:
         prox_ano = hoje.year + (1 if hoje.month == 12 else 0)
         prox_mes = 1 if hoje.month == 12 else hoje.month + 1
         proximo_vencimento = datetime.date(prox_ano, prox_mes, 20)
     else:
         proximo_vencimento = datetime.date(hoje.year, hoje.month, 20)
-
     dias_para_vencimento = (proximo_vencimento - hoje).days
     alerta_vencimento = dias_para_vencimento <= 5
 
-    # Evita poluir a UI com flashes repetidos a cada refresh do dashboard.
-    # Os indicadores de DAS e limite ja aparecem visualmente nos cards do painel.
+    dias_no_mes = calendar.monthrange(hoje.year, hoje.month)[1]
+    dias_decorridos = max(hoje.day, 1)
+    lucro_diario_medio = lucro_liquido / dias_decorridos
+    projecao_lucro_mes = lucro_diario_medio * dias_no_mes
+    projecao_texto = f"Se continuar nesse ritmo, voce fecha o mes com {formato_br(projecao_lucro_mes)}."
 
-    ultima_conciliacao = session.get("ultima_conciliacao")
+    return {
+        "receita_total": receita_total,
+        "despesas": despesas,
+        "lucro_liquido": lucro_liquido,
+        "grafico_linha": grafico_linha,
+        "faturamento_anual": faturamento_anual,
+        "perto_limite": perto_limite,
+        "das_estimado": das_estimado,
+        "saldo_acumulado": saldo_acumulado,
+        "das_mensal_estimado": das_mensal_estimado,
+        "caixa_real": caixa_real,
+        "despesas_media_mensal": despesas_media_mensal,
+        "reserva_minima": reserva_minima,
+        "retirada_segura": retirada_segura,
+        "retirada_recomendada": retirada_recomendada,
+        "retirada_titulo": retirada_titulo,
+        "retirada_subtexto": retirada_subtexto,
+        "alerta_vencimento": alerta_vencimento,
+        "dias_para_vencimento": dias_para_vencimento,
+        "finance_score": finance_score,
+        "finance_score_label": finance_score_label,
+        "finance_score_tone": finance_score_tone,
+        "score_criterios": score_criterios,
+        "score_motivo": " ".join(motivos),
+        "variacao_lucro_pct": variacao_lucro_pct,
+        "tendencia_status": tendencia_status,
+        "mes_anterior_label": mes_anterior_label,
+        "limite_ratio_pct": limite_ratio * 100,
+        "lucro_hoje": lucro_hoje,
+        "projecao_lucro_mes": projecao_lucro_mes,
+        "projecao_texto": projecao_texto,
+        "today_iso": hoje.isoformat(),
+        "now": datetime.datetime.now(),
+    }
 
-    return render_template(
-        "dashboard.html",
-        mensagem=mensagem,
-        divergencia=divergencia,
-        total_extrato=total_extrato,
-        total_vendas=total_vendas,
-        pdf_path=pdf_path,
-        wa_link=wa_link,
-        receita_total=receita_total,
-        despesas=despesas,
-        lucro_liquido=lucro_liquido,
-        grafico_linha=grafico_linha,
-        faturamento_anual=faturamento_anual,
-        perto_limite=perto_limite,
-        das_estimado=das_estimado,
-        saldo_acumulado=saldo_acumulado,
-        das_mensal_estimado=das_mensal_estimado,
-        caixa_real=caixa_real,
-        despesas_media_mensal=despesas_media_mensal,
-        reserva_minima=reserva_minima,
-        retirada_segura=retirada_segura,
-        retirada_recomendada=retirada_recomendada,
-        retirada_titulo=retirada_titulo,
-        retirada_subtexto=retirada_subtexto,
-        alerta_vencimento=alerta_vencimento,
-        dias_para_vencimento=dias_para_vencimento,
-        finance_score=finance_score,
-        finance_score_label=finance_score_label,
-        finance_score_tone=finance_score_tone,
-        score_criterios=score_criterios,
-        score_motivo=" ".join(motivos),
-        variacao_lucro_pct=variacao_lucro_pct,
-        tendencia_status=tendencia_status,
-        mes_anterior_label=mes_anterior_label,
-        ultima_conciliacao=ultima_conciliacao,
-        formato_br=formato_br,
+
+def _dashboard_metrics_json(metrics):
+    return {
+        "finance_score": metrics["finance_score"],
+        "finance_score_label": metrics["finance_score_label"],
+        "finance_score_tone": metrics["finance_score_tone"],
+        "score_motivo": metrics["score_motivo"],
+        "receita_total_fmt": formato_br(metrics["receita_total"]),
+        "despesas_fmt": formato_br(metrics["despesas"]),
+        "lucro_liquido_fmt": formato_br(metrics["lucro_liquido"]),
+        "faturamento_anual_fmt": formato_br(metrics["faturamento_anual"]),
+        "limite_ratio_fmt": f"{metrics['limite_ratio_pct']:.1f}%",
+        "lucro_hoje_fmt": formato_br(metrics["lucro_hoje"]),
+        "projecao_lucro_mes_fmt": formato_br(metrics["projecao_lucro_mes"]),
+        "projecao_texto": metrics["projecao_texto"],
+    }
+
+
+@app.post("/dashboard/movimentacao-rapida")
+@login_required
+def dashboard_movimentacao_rapida():
+    payload = request.get_json(silent=True) or {}
+    tipo = (payload.get("tipo") or "").strip().lower()
+    metodo = (payload.get("metodo_pagamento") or "").strip() or "nao_informado"
+    categoria = (payload.get("categoria") or "").strip()
+    data_str = (payload.get("data") or "").strip() or datetime.date.today().isoformat()
+    valor = limpar_valor(payload.get("valor"))
+
+    if tipo not in {"venda", "despesa"}:
+        return jsonify({"ok": False, "message": "Tipo invalido. Use venda ou despesa."}), 400
+    if valor is None or valor <= 0:
+        return jsonify({"ok": False, "message": "Informe um valor valido maior que zero."}), 400
+    try:
+        datetime.date.fromisoformat(data_str)
+    except ValueError:
+        return jsonify({"ok": False, "message": "Data invalida. Use o formato YYYY-MM-DD."}), 400
+
+    sinal = 1 if tipo == "venda" else -1
+    valor_bruto = float(valor) * sinal
+    valor_liquido = valor_bruto
+    descricao = categoria if categoria else f"Movimentacao rapida - {tipo}"
+    status = "mov_rapida_venda" if tipo == "venda" else "mov_rapida_despesa"
+
+    db_execute(
+        """
+        INSERT INTO sales (
+            user_id, data, descricao, metodo_pagamento, parcelado, parcelas,
+            valor_bruto, taxa_percentual, taxa_fixa, valor_liquido, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME('now'))
+        """,
+        (
+            current_user.id,
+            data_str,
+            descricao,
+            metodo,
+            0,
+            0,
+            valor_bruto,
+            0.0,
+            0.0,
+            valor_liquido,
+            status,
+        ),
+        commit=True,
+    )
+
+    metrics = _build_dashboard_metrics(current_user.id)
+    return jsonify(
+        {
+            "ok": True,
+            "message": "Movimentacao salva com sucesso.",
+            "dashboard": _dashboard_metrics_json(metrics),
+        }
     )
 
 
@@ -1251,10 +1349,6 @@ def download():
 @login_required
 def escolher_plano():
     conciliacao = session.get("conciliacao_pendente")
-    if not conciliacao:
-        flash("Nenhuma conciliacao pendente. Faca upload novamente.", "info")
-        return redirect(url_for("dashboard"))
-
     return render_template("escolher_plano.html", conciliacao=conciliacao)
 
 
