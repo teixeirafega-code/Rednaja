@@ -10,4 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render
-        run: curl -s https://meis-rednaja.onrender.com/health
+        run: |
+          curl -s https://meis-rednaja.onrender.com/
+          curl -s https://meis-rednaja.onrender.com/health
